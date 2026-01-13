@@ -1,4 +1,4 @@
-from vendor.pysnmp.hlapi import *
+from pysnmp.hlapi import *
 from config import SNMP_CONFIG, OIDS
 
 class SNMPManager:
