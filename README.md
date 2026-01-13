@@ -1,4 +1,4 @@
-LAN SNMP Monitoring 📡
+# LAN SNMP Monitoring 📡
 
 Kompletny system do monitorowania urządzeń sieciowych w czasie rzeczywistym z wykorzystaniem bezpiecznego protokołu SNMPv3.
 
@@ -18,7 +18,7 @@ Raportowanie: Generowanie profesjonalnych raportów PDF ze stanem urządzenia na
 
 Symulacja: Wbudowany symulator routera Cisco oraz generator obciążenia do celów testowych i demonstracyjnych.
 
-🛠️ Architektura i Technologie
+# 🛠️ Architektura i Technologie
 
 Projekt działa w architekturze hybrydowej, co ułatwia rozwój i testowanie:
 
@@ -32,7 +32,7 @@ Stos technologiczny:
 -Baza Danych: InfluxDB (Docker)
 -Symulator: snmpsim (Docker)
 
-📋 Wymagania Wstępne
+# 📋 Wymagania Wstępne
 
 Przed uruchomieniem upewnij się, że masz zainstalowane:
 
@@ -55,22 +55,33 @@ cd LAN-SNMP-Monitoring
 Otwórz terminal w folderze projektu:
 
 cd backend
-# Instalacja wymaganych bibliotek
-# Jeśli komenda 'pip' nie działa, spróbuj "python -m pip install -r requirements.txt"
+
+Instalacja wymaganych bibliotek:
+
+Jeśli komenda 'pip' nie działa, spróbuj "python -m pip install -r requirements.txt"
 pip install -r requirements.txt
 
 
 Ważne: Utwórz w folderze backend nowy plik o nazwie .env i wklej do niego poniższą konfigurację (jest ona ignorowana przez Git dla bezpieczeństwa):
 
 SNMP_HOST=127.0.0.1
+
 SNMP_PORT=16100
+
 SNMP_USERNAME=simulator
+
 SNMP_AUTH_PASSWORD=snmpauth123
+
 SNMP_PRIV_PASSWORD=snmppriv123
+
 SNMP_CONTEXT_NAME=router
+
 INFLUX_HOST=localhost
+
 INFLUX_PORT=8086
+
 INFLUX_DB=snmp_data
+
 
 
 3. Konfiguracja Frontendu (React)
@@ -82,7 +93,7 @@ cd ../frontend
 npm install
 
 
-⚡ Codzienne Uruchamianie (Szybki Start)
+# ⚡ Codzienne Uruchamianie (Szybki Start)
 
 Gdy masz już zainstalowane biblioteki, uruchomienie systemu jest bardzo proste.
 
@@ -98,7 +109,7 @@ Skrypt automatycznie:
 -Otworzy okno z serwerem Backend
 -Otworzy okno z Frontendem i uruchomi przeglądarkę
 
-Metoda Ręczna (Terminal):
+# Metoda Ręczna (Terminal):
 
 Jeśli wolisz terminal, uruchom komponenty w osobnych oknach:
 
@@ -107,9 +118,9 @@ Jeśli wolisz terminal, uruchom komponenty w osobnych oknach:
 -Backend: cd backend -> python app.py
 -Frontend: cd frontend -> npm start
 
-Aplikacja dostępna jest pod adresem: http://localhost:3000
+Aplikacja dostępna jest pod adresem: http://localhost:3000 (lub http://localhost:3001, jeśli port 3000 jest zajęty)
 
-📂 Struktura Katalogów
+# 📂 Struktura Katalogów
 
 /backend - Kod serwera API (Flask), logika SNMP, generator raportów PDF.
 
@@ -123,7 +134,7 @@ generate_load.py - Skrypt Python generujący losowe obciążenie dla symulatora 
 
 start_monitoring.bat - Launcher dla systemu Windows.
 
-❓ Rozwiązywanie problemów
+# ❓ Rozwiązywanie problemów
 
 Jeśli napotkasz błędy podczas instalacji lub uruchamiania, sprawdź poniższe rozwiązania.
 
