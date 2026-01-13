@@ -111,11 +111,15 @@ Metoda Automatyczna (Windows):
 Upewnij się, że Docker Desktop jest włączony.
 W głównym folderze znajdź plik start_monitoring.bat.
 Kliknij go dwukrotnie.
+
 Skrypt automatycznie:
 
 -Podniesie kontenery Dockera (Baza + Symulator)
+
 -Otworzy okno z generatorem danych (symulacja ruchu)
+
 -Otworzy okno z serwerem Backend
+
 -Otworzy okno z Frontendem i uruchomi przeglądarkę
 
 # Metoda Ręczna (Terminal):
