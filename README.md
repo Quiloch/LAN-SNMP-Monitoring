@@ -84,12 +84,17 @@ INFLUX_DB=snmp_data
 
 
 
+
+
 3. Konfiguracja Frontendu (React)
 
 Wróć do głównego katalogu i wejdź do folderu frontend:
 
 cd ../frontend
-# Pobranie bibliotek (node_modules)
+
+
+Pobranie bibliotek (node_modules):
+
 npm install
 
 
@@ -114,8 +119,11 @@ Skrypt automatycznie:
 Jeśli wolisz terminal, uruchom komponenty w osobnych oknach:
 
 -Infrastruktura: docker-compose up -d
+
 -Generator: python generate_load.py
+
 -Backend: cd backend -> python app.py
+
 -Frontend: cd frontend -> npm start
 
 Aplikacja dostępna jest pod adresem: http://localhost:3000 (lub http://localhost:3001, jeśli port 3000 jest zajęty)
