@@ -41,8 +41,11 @@ Stos technologiczny:
 Przed uruchomieniem upewnij się, że masz zainstalowane:
 
 -Docker Desktop (musi być uruchomiony w tle)
+
 -Python 3.10+ (z dodanym do zmiennej środowiskowej PATH)
+
 -Node.js 16+ (niezbędny do obsługi frontendu i komendy npm)
+
 -Git (do pobrania projektu)
 
 # 🛠️ Instalacja i Pierwsze Uruchomienie
