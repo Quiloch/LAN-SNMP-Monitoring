@@ -27,9 +27,13 @@ Infrastruktura (Docker): Baza danych i Symulator urządzenia działają w izolow
 Aplikacja (Host): Backend i Frontend uruchamiane są lokalnie na systemie hosta (Windows/Linux).
 
 Stos technologiczny:
+
 -Backend: Python 3.10+, Flask, PySNMP, FPDF
+
 -Frontend: React 18, Recharts, Axios
+
 -Baza Danych: InfluxDB (Docker)
+
 -Symulator: snmpsim (Docker)
 
 # 📋 Wymagania Wstępne
