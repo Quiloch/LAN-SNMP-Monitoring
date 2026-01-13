@@ -41,7 +41,7 @@ Przed uruchomieniem upewnij się, że masz zainstalowane:
 -Node.js 16+ (niezbędny do obsługi frontendu i komendy npm)
 -Git (do pobrania projektu)
 
-🛠️ Instalacja i Pierwsze Uruchomienie
+# 🛠️ Instalacja i Pierwsze Uruchomienie
 
 Wykonaj te kroki tylko raz po pobraniu projektu na dysk.
 
