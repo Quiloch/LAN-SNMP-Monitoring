@@ -16,7 +16,7 @@ def generate_data():
 
     while True:
         # Generowanie losowych wartości dla CPU i RAM
-        cpu_load = random.randint(0, 100) 
+        cpu_load = random.randint(1, 100) 
         ram_total = 1024000
         ram_free = int(ram_total * random.uniform(0.1, 0.9))
         
