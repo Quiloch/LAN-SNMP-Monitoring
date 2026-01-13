@@ -1,28 +1,3 @@
-import sys
-import os
-
-# --- KONFIGURACJA VENDORINGU (Musi być pierwsza!) ---
-# Dodajemy folder 'vendor' do ścieżki wyszukiwania bibliotek.
-# Dzięki temu Python załaduje nasze lokalne 'pysnmp' zamiast systemowego.
-base_dir = os.path.dirname(os.path.abspath(__file__))
-vendor_dir = os.path.join(base_dir, 'vendor')
-if os.path.exists(vendor_dir):
-    sys.path.insert(0, vendor_dir)
-# ----------------------------------------------------
-
-# # --- NAPRAWA ASYNCORE (Dla Python 3.12+) ---
-try:
-    import asyncore
-except ImportError:
-    try:
-        import pyasyncore as asyncore
-        sys.modules['asyncore'] = asyncore
-        import asynchat
-        sys.modules['asynchat'] = asynchat
-    except ImportError:
-        print("⚠️ OSTRZEŻENIE: Brak modułu 'pyasyncore'. Uruchom 'pip install pyasyncore'.")
-# # -------------------------------------------
-
 from flask import Flask, jsonify, render_template, send_file, request
 from flask_cors import CORS
 from datetime import datetime, timedelta
@@ -32,15 +7,15 @@ import time
 import threading
 import logging
 from influxdb import InfluxDBClient
-from config import SNMP_CONFIG
-
-# Importy lokalne
 from snmp_scan import SNMPManager
+from config import SNMP_CONFIG
 from export import export_to_csv, export_to_influxdb
 from discovery import DeviceDiscovery
+import os
 from report import generate_pdf_report
 from io import BytesIO
 
+# Konfiguracja logowania
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SNMP-Monitor")
 
@@ -50,6 +25,7 @@ CORS(app)
 snmp_manager = SNMPManager()
 device_discovery = DeviceDiscovery()
 
+# --- Połączenie z InfluxDB (w Dockerze) ---
 influx_client = InfluxDBClient(
     host=SNMP_CONFIG['influx_host'],
     port=SNMP_CONFIG['influx_port']
@@ -61,9 +37,12 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Ostrzeżenie InfluxDB: {e}")
 
+# --- Wątek w tle (Scheduler) ---
 def background_monitoring():
+    """Zbiera dane co 10s i zapisuje do bazy"""
     time.sleep(5)
     logger.info("🟢 Uruchamianie monitoringu w tle...")
+    
     while True:
         try:
             data = snmp_manager.get_snmp_data()
@@ -71,17 +50,19 @@ def background_monitoring():
             
             if not error_found and data:
                 export_to_influxdb(data)
-                logger.debug(f"Zarchiwizowano dane: CPU={data.get('cpuUsage')}%")
+                logger.debug(f"💾 Zapisano dane w tle: CPU={data.get('cpuUsage')}%")
             else:
-                pass 
+                pass # Cicha praca przy błędach
         except Exception as e:
-            logger.error(f"Wyjątek w wątku monitorującym: {e}")
+            logger.error(f"❌ Błąd wątku monitoringu: {e}")
+        
         time.sleep(10)
 
 if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
     monitor_thread = threading.Thread(target=background_monitoring, daemon=True)
     monitor_thread.start()
 
+# --- Funkcja pobierania historii ---
 def get_history_data(hours=1):
     try:
         influx_client.switch_database(SNMP_CONFIG['influx_db'])
@@ -99,13 +80,18 @@ def get_history_data(hours=1):
             
             item = {
                 'timestamp': cpu_point['time'],
-                'data': { 'cpuUsage': cpu_point['value'], 'ramUsage': ram_val }
+                'data': {
+                    'cpuUsage': cpu_point['value'],
+                    'ramUsage': ram_val
+                }
             }
             history.append(item)
         return history
     except Exception as e:
-        logger.error(f"Błąd pobierania historii: {str(e)}")
+        app.logger.error(f"Błąd historii DB: {str(e)}")
         return []
+
+# --- Endpointy API ---
 
 @app.route('/')
 def home():
@@ -115,17 +101,6 @@ def home():
 def get_snmp_data_endpoint():
     data = snmp_manager.get_snmp_data()
     return jsonify(data)
-
-@app.route('/dashboard')
-def dashboard():
-    try:
-        data = snmp_manager.get_snmp_data()
-        history = get_history_data(hours=1)
-        json_data = json.dumps(history)
-        encoded_history = base64.b64encode(json_data.encode()).decode()
-        return render_template('dashboard.html', data=data, history=encoded_history)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/history')
 def get_history_api():
@@ -146,9 +121,17 @@ def get_status():
 @app.route('/export/report/pdf')
 def export_pdf_report():
     try:
+        # 1. Pobierz aktualne dane
         data = snmp_manager.get_snmp_data()
+        
+        # 2. Pobierz historię dla wykresu i tabeli (ostatnia godzina wystarczy)
+        history = get_history_data(hours=1)
+        
         filename = f"raport_sieciowy_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        pdf_bytes = generate_pdf_report(data)
+        
+        # 3. Generuj PDF przekazując OBA zbiory danych
+        pdf_bytes = generate_pdf_report(data, history)
+        
         buffer = BytesIO(pdf_bytes)
         buffer.seek(0)
         return send_file(buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
