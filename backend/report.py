@@ -1,5 +1,12 @@
 from fpdf import FPDF
 from datetime import datetime
+import matplotlib
+import matplotlib.pyplot as plt
+import tempfile
+import os
+
+# Ustawienie trybu "bezokienkowego" (ważne dla serwera/Dockera)
+matplotlib.use('Agg')
 
 class PDFReport(FPDF):
     def header(self):
@@ -7,7 +14,7 @@ class PDFReport(FPDF):
         self.cell(0, 10, 'Raport Monitoringu Sieci LAN', 0, 1, 'C')
         self.ln(5)
         self.set_font('Arial', 'I', 10)
-        self.cell(0, 10, f'Data generowania: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', 0, 1, 'R')
+        self.cell(0, 10, f'Data: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', 0, 1, 'R')
         y = self.get_y()
         self.line(10, y + 2, 200, y + 2)
         self.ln(10)
@@ -24,143 +31,121 @@ class PDFReport(FPDF):
         self.ln(4)
 
 def clean_text(text):
-    if not isinstance(text, str):
-        return str(text)
-    replacements = {
-        'ą': 'a', 'ć': 'c', 'ę': 'e', 'ł': 'l', 'ń': 'n', 'ó': 'o', 'ś': 's', 'ź': 'z', 'ż': 'z',
-        'Ą': 'A', 'Ć': 'C', 'Ę': 'E', 'Ł': 'L', 'Ń': 'N', 'Ó': 'O', 'Ś': 'S', 'Ź': 'Z', 'Ż': 'Z'
-    }
-    for k, v in replacements.items():
-        text = text.replace(k, v)
+    if not isinstance(text, str): return str(text)
+    replacements = {'ą':'a','ć':'c','ę':'e','ł':'l','ń':'n','ó':'o','ś':'s','ź':'z','ż':'z'}
+    for k, v in replacements.items(): text = text.replace(k, v)
     return text
 
-# Funkcja pomocnicza do bezpiecznej konwersji
-def safe_int(value):
-    try:
-        if value is None or value == '':
-            return 0
-        return int(value)
-    except (ValueError, TypeError):
-        return 0
+def create_chart_image(history_data):
+    """Generuje plik PNG z wykresem CPU"""
+    if not history_data or len(history_data) < 2: 
+        return None
+    
+    # Przygotowanie danych (odwracamy, żeby najnowsze były po prawej)
+    # Zakładamy, że history_data przychodzi posortowane od najnowszych
+    data_to_plot = list(reversed(history_data[:20])) # Ostatnie 20 punktów
+    
+    timestamps = [item['timestamp'][11:19] for item in data_to_plot] # Tylko HH:MM:SS
+    cpu_values = [float(item['data']['cpuUsage']) for item in data_to_plot]
+    
+    plt.figure(figsize=(10, 4))
+    plt.plot(timestamps, cpu_values, label='CPU %', color='red', linewidth=2, marker='o', markersize=4)
+    
+    plt.title('Obciazenie CPU (Ostatnie pomiary)')
+    plt.xlabel('Czas')
+    plt.ylabel('CPU %')
+    plt.grid(True, linestyle='--', alpha=0.5)
+    plt.legend()
+    plt.ylim(0, 100)
+    
+    # Ograniczenie etykiet osi X
+    if len(timestamps) > 5:
+        plt.xticks(ticks=range(0, len(timestamps), max(1, len(timestamps)//5)), rotation=45)
+    
+    plt.tight_layout()
+    
+    # Zapis do pliku tymczasowego
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+    plt.savefig(temp_file.name, format='png', dpi=100)
+    plt.close()
+    return temp_file.name
 
-def generate_pdf_report(current_data):
+def generate_pdf_report(current_data, history_data=None):
     pdf = PDFReport()
     pdf.add_page()
     
     # 1. Informacje
     pdf.chapter_title('1. Informacje o Urzadzeniu')
-    sys_name = clean_text(current_data.get('sysName', 'N/A'))
-    sys_descr = clean_text(current_data.get('sysDescr', 'N/A'))
-    sys_contact = clean_text(current_data.get('sysContact', 'N/A'))
-    sys_location = clean_text(current_data.get('sysLocation', 'N/A'))
-    
-    try:
-        uptime_raw = safe_int(current_data.get('sysUpTime', 0))
-        uptime_hours = uptime_raw / 100 / 3600
-        uptime_str = f"{uptime_hours:.1f} h"
-    except:
-        uptime_str = "N/A"
-    
     pdf.set_font('Arial', '', 10)
-    info_data = [
-        ("Nazwa Hosta:", sys_name),
-        ("Lokalizacja:", sys_location),
-        ("Kontakt:", sys_contact),
-        ("Czas pracy (Uptime):", uptime_str),
-        ("Opis:", sys_descr)
+    info = [
+        ("Host:", clean_text(current_data.get('sysName', 'N/A'))),
+        ("Opis:", clean_text(current_data.get('sysDescr', 'N/A'))),
+        ("Lokalizacja:", clean_text(current_data.get('sysLocation', 'N/A'))),
+        ("Kontakt:", clean_text(current_data.get('sysContact', 'N/A')))
     ]
-
-    for label, value in info_data:
-        pdf.set_font('Arial', 'B', 10)
-        pdf.cell(45, 6, label, 0, 0)
-        pdf.set_font('Arial', '', 10)
-        if label == "Opis:":
-            pdf.ln(6)
-            pdf.multi_cell(0, 6, value)
-        else:
-            pdf.cell(0, 6, value, 0, 1)
-    
+    for l, v in info:
+        pdf.cell(35, 6, l, 0, 0)
+        pdf.multi_cell(0, 6, v)
     pdf.ln(5)
 
-    # 2. Zasoby
-    pdf.chapter_title('2. Stan Zasobow')
+    # 2. Zasoby (Aktualne)
+    pdf.chapter_title('2. Aktualny Stan Zasobow')
     cpu = current_data.get('cpuUsage', '0')
+    ram = current_data.get('ramUsage', '0')
     
-    try:
-        ram_total = float(current_data.get('ramTotal', 0)) / 1024 / 1024
-        ram_free = float(current_data.get('ramFree', 0)) / 1024 / 1024
-    except (ValueError, TypeError):
-        ram_total = 0; ram_free = 0
+    try: ram_mb = float(ram)/1024/1024
+    except: ram_mb = 0
     
-    pdf.set_font('Arial', '', 10)
-    pdf.cell(45, 6, 'Obciazenie CPU:', 0, 0)
-    # Zabezpieczenie przed pustym CPU
-    cpu_val = float(cpu) if cpu and cpu != '' else 0
-    if cpu_val > 80:
-        pdf.set_text_color(200, 0, 0)
-    else:
-        pdf.set_text_color(0, 128, 0)
+    pdf.cell(35, 6, 'CPU:', 0, 0)
+    pdf.set_text_color(200, 0, 0) if float(cpu) > 80 else pdf.set_text_color(0, 128, 0)
     pdf.cell(0, 6, f"{cpu}%", 0, 1)
-    pdf.set_text_color(0, 0, 0)
+    pdf.set_text_color(0)
     
-    pdf.cell(45, 6, 'RAM Calkowity:', 0, 0)
-    pdf.cell(0, 6, f"{ram_total:.2f} MB", 0, 1)
-    pdf.cell(45, 6, 'RAM Wolny:', 0, 0)
-    pdf.cell(0, 6, f"{ram_free:.2f} MB", 0, 1)
-    pdf.ln(5)
+    pdf.cell(35, 6, 'RAM:', 0, 0)
+    pdf.cell(0, 6, f"{ram_mb:.2f} MB", 0, 1)
+    pdf.ln(8)
 
-    # 3. Interfejsy
-    pdf.chapter_title('3. Status Interfejsow')
-    pdf.set_font('Arial', 'B', 9)
-    w = [35, 20, 35, 35, 30, 35] 
-    headers = ['Interfejs', 'Status', 'Ruch IN', 'Ruch OUT', 'Bledy IN', 'Bledy OUT']
-    
-    for i, h in enumerate(headers):
-        pdf.cell(w[i], 7, h, 1, 0, 'C')
-    pdf.ln()
-    
-    pdf.set_font('Arial', '', 9)
-    interfaces = [1, 2]
-    
-    for i in interfaces:
-        prefix = f"if{i}"
-        name = clean_text(current_data.get(f'{prefix}_Name', f'Fa0/{i}'))
-        status_val = current_data.get(f'{prefix}_Status', '2')
-        
-        try:
-            in_bytes = float(current_data.get(f'{prefix}_In', 0)) / 1024 / 1024
-            out_bytes = float(current_data.get(f'{prefix}_Out', 0)) / 1024 / 1024
-            in_str = f"{in_bytes:.2f} MB"
-            out_str = f"{out_bytes:.2f} MB"
-        except (ValueError, TypeError):
-            in_str = "0 MB"
-            out_str = "0 MB"
+    # 3. Wykres Historii (NOWE)
+    if history_data:
+        pdf.chapter_title('3. Wykres Historii CPU')
+        chart_path = create_chart_image(history_data)
+        if chart_path:
+            # Wstawienie obrazka
+            pdf.image(chart_path, x=10, w=190)
+            os.remove(chart_path) # Usunięcie pliku tymczasowego
+            pdf.ln(5)
 
-        # Użycie bezpiecznej konwersji
-        err_in = safe_int(current_data.get(f'{prefix}_ErrIn', '0'))
-        err_out = safe_int(current_data.get(f'{prefix}_ErrOut', '0'))
-
-        status_txt = "UP" if status_val == '1' else "DOWN"
+    # 4. Tabela Historii (NOWE)
+    if history_data:
+        pdf.add_page() # Nowa strona dla tabeli
+        pdf.chapter_title('4. Ostatnie Pomiary (Tabela)')
         
-        pdf.cell(w[0], 7, name, 1)
-        if status_val == '1':
-            pdf.set_text_color(0, 128, 0)
-        else:
-            pdf.set_text_color(200, 0, 0)
-        pdf.cell(w[1], 7, status_txt, 1, 0, 'C')
-        pdf.set_text_color(0, 0, 0)
+        # Nagłówki
+        pdf.set_font('Arial', 'B', 10)
+        col_w = [60, 30, 40] # Szerokości kolumn
+        headers = ['Czas', 'CPU %', 'RAM (MB)']
         
-        pdf.cell(w[2], 7, in_str, 1, 0, 'R')
-        pdf.cell(w[3], 7, out_str, 1, 0, 'R')
+        # Wyśrodkowanie
+        left_margin = (210 - sum(col_w)) / 2
+        pdf.set_x(left_margin)
         
-        if err_in > 0: pdf.set_text_color(200, 0, 0)
-        pdf.cell(w[4], 7, str(err_in), 1, 0, 'C')
-        pdf.set_text_color(0, 0, 0)
-        
-        if err_out > 0: pdf.set_text_color(200, 0, 0)
-        pdf.cell(w[5], 7, str(err_out), 1, 0, 'C')
-        pdf.set_text_color(0, 0, 0)
-        
+        for i, h in enumerate(headers):
+            pdf.cell(col_w[i], 7, h, 1, 0, 'C', True)
         pdf.ln()
+        
+        pdf.set_font('Arial', '', 10)
+        
+        # Bierzemy ostatnie 15 wpisów
+        for item in history_data[:15]:
+            ts = item['timestamp'].replace('T', ' ')[:19]
+            c = item['data']['cpuUsage']
+            try: r = f"{float(item['data']['ramUsage'])/1024/1024:.2f}"
+            except: r = "0"
+            
+            pdf.set_x(left_margin)
+            pdf.cell(col_w[0], 7, ts, 1, 0, 'C')
+            pdf.cell(col_w[1], 7, str(c), 1, 0, 'C')
+            pdf.cell(col_w[2], 7, r, 1, 0, 'C')
+            pdf.ln()
 
     return pdf.output(dest='S').encode('latin-1')
