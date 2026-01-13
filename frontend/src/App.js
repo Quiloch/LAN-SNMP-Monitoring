@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 
-// Adres IP localhost na Windowsie
+// Adres API Backendu
 const API_URL = 'http://127.0.0.1:5001';
 
 function App() {
@@ -15,7 +15,12 @@ function App() {
   
   const [showDebug, setShowDebug] = useState(false);
 
-  // Formatowanie jednostek danych (Bytes -> MB/GB)
+  // Ref do przechowywania interwału, aby go czyścić przy odmontowaniu
+  const intervalRef = useRef(null);
+
+  // --- Funkcje pomocnicze ---
+  
+  // Formatowanie bajtów (np. RAM, Ruch sieciowy)
   const formatBytes = (bytes, decimals = 2) => {
       if (!+bytes) return '0 B';
       const k = 1024;
@@ -25,6 +30,7 @@ function App() {
       return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
   };
 
+  // Formatowanie czasu pracy (Uptime)
   const formatUptime = (ticks) => {
       if (!ticks) return 'N/A';
       const seconds = parseInt(ticks) / 100;
@@ -34,63 +40,9 @@ function App() {
       return `${days}d ${hours}h ${minutes}m`;
   };
 
-  const fetchData = async () => {
-    try {
-      setDebugInfo(`Żądanie danych z ${API_URL}/snmp...`);
-      const currentRes = await axios.get(`${API_URL}/snmp`);
-      
-      setDebugInfo(`Otrzymano odpowiedź: ${JSON.stringify(currentRes.data).substring(0, 100)}...`);
-
-      if (currentRes.data && typeof currentRes.data === 'object') {
-        setCurrentData(currentRes.data);
-        checkAlerts(currentRes.data);
-        setError(null);
-      }
-    } catch (err) {
-      console.error("Błąd komunikacji:", err);
-      const msg = err.message;
-      setError(`Błąd połączenia z API: ${msg}`);
-      setDebugInfo(`EXCEPTION: ${msg}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkAlerts = (data) => {
-      const newAlerts = [];
-      const cpu = parseFloat(data.cpuUsage);
-      
-      // Progi alarmowe
-      if (cpu > 80) {
-          newAlerts.push({
-              id: 1, 
-              type: 'critical', 
-              msg: `KRYTYCZNE: Obciążenie CPU wynosi ${cpu}% (Próg: 80%)`
-          });
-      }
-      
-      if (data.if2_Status === '2') {
-           newAlerts.push({
-              id: 2, 
-              type: 'warning', 
-              msg: `OSTRZEŻENIE: Awaria interfejsu GigabitEthernet0/1 (Status: DOWN)`
-          });
-      }
-      
-      // Sprawdzenie błędów na interfejsach
-      if (parseInt(data.if1_ErrIn) > 0 || parseInt(data.if1_ErrOut) > 0) {
-           newAlerts.push({
-              id: 3, 
-              type: 'warning', 
-              msg: `Wykryto błędy na interfejsie GigabitEthernet0/0`
-          });
-      }
-
-      setAlerts(newAlerts);
-  };
-  
+  // Funkcja generująca raport PDF
   const handleDownloadReport = () => {
-      // Tworzymy tymczasowy link do pobrania
+      // Tworzymy tymczasowy link do pobrania pliku
       const link = document.createElement('a');
       link.href = `${API_URL}/export/report/pdf`;
       link.setAttribute('download', 'raport.pdf');
@@ -99,13 +51,79 @@ function App() {
       document.body.removeChild(link);
   };
 
-  useEffect(() => {
-    const interval = setInterval(fetchData, 5000);
-    fetchData(); 
-    return () => clearInterval(interval);
-  }, []);
+  // --- Główna logika danych ---
 
-  // Aktualizacja lokalnej historii wykresów
+  useEffect(() => {
+    // Definicja funkcji wewnątrz useEffect eliminuje problem zależności
+    const checkAlerts = (data) => {
+        const newAlerts = [];
+        const cpu = parseFloat(data.cpuUsage);
+        
+        // Alert: Wysokie CPU
+        if (cpu > 80) {
+            newAlerts.push({
+                id: 1, 
+                type: 'critical', 
+                msg: `KRYTYCZNE: Obciążenie CPU wynosi ${cpu}% (Próg: 80%)`
+            });
+        }
+        
+        // Alert: Awaria interfejsu
+        if (data.if2_Status === '2') {
+             newAlerts.push({
+                id: 2, 
+                type: 'warning', 
+                msg: `OSTRZEŻENIE: Interfejs GigabitEthernet0/1 jest DOWN`
+            });
+        }
+
+        // Alert: Błędy transmisji
+        if (parseInt(data.if1_ErrIn) > 0 || parseInt(data.if1_ErrOut) > 0) {
+            newAlerts.push({
+                id: 3, 
+                type: 'warning', 
+                msg: `Wykryto błędy transmisji na GigabitEthernet0/0`
+            });
+        }
+
+        setAlerts(newAlerts);
+    };
+
+    const fetchData = async () => {
+      try {
+        // setDebugInfo(`Odpytywanie ${API_URL}/snmp...`); // Opcjonalne logowanie
+        const currentRes = await axios.get(`${API_URL}/snmp`);
+        
+        setDebugInfo(`Otrzymano dane: ${JSON.stringify(currentRes.data).substring(0, 50)}...`);
+
+        if (currentRes.data && typeof currentRes.data === 'object') {
+          setCurrentData(currentRes.data);
+          checkAlerts(currentRes.data);
+          setError(null);
+        }
+      } catch (err) {
+        console.error("Błąd:", err);
+        const msg = err.message;
+        setError(`Błąd połączenia: ${msg}. Upewnij się, że backend działa.`);
+        setDebugInfo(`BŁĄD: ${msg}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Uruchomienie przy starcie
+    fetchData();
+    
+    // Cykliczne odświeżanie co 5 sekund
+    intervalRef.current = setInterval(fetchData, 5000);
+
+    // Czyszczenie interwału przy odmontowaniu
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []); // Pusta tablica zależności = uruchom tylko raz przy montowaniu
+
+  // Aktualizacja historii wykresów na podstawie currentData
   useEffect(() => {
     if (currentData && !error) {
         const now = new Date().toLocaleTimeString();
@@ -116,6 +134,7 @@ function App() {
             setHistoryData(prev => {
                 const newPoint = { time: now, cpu: cpuVal, ram: ramVal };
                 const newHistory = [...prev, newPoint];
+                // Trzymaj ostatnie 20 punktów, żeby wykres był czytelny
                 if (newHistory.length > 20) newHistory.shift();
                 return newHistory;
             });
@@ -123,10 +142,11 @@ function App() {
     }
   }, [currentData, error]);
 
-  if (loading && !currentData) return <div style={{padding: 20}}>Inicjalizacja systemu monitoringu...</div>;
+  if (loading && !currentData) return <div style={{padding: 20, textAlign: 'center', color: '#666'}}>Ładowanie systemu monitoringu...</div>;
 
   return (
     <div className="App">
+      {/* STYLE WBUDOWANE BEZPOŚREDNIO W KOMPONENT */}
       <style>{`
         body { background-color: #f0f2f5; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .App { padding: 20px; text-align: center; padding-bottom: 60px; }
@@ -141,10 +161,10 @@ function App() {
         
         /* Komponenty Kart */
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: left; }
-        .card h2, .card h3 { margin-top: 0; color: #34495e; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .card h2 { margin-top: 0; color: #34495e; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; font-size: 1.2rem; }
         
         /* Tabele */
-        .interface-table { width: 100%; border-collapse: collapse; }
+        .interface-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         .interface-table th, .interface-table td { padding: 12px; border-bottom: 1px solid #eee; }
         .interface-table th { text-align: left; background-color: #f8f9fa; color: #7f8c8d; }
         
@@ -171,6 +191,8 @@ function App() {
         .btn-debug-toggle:hover { opacity: 1; }
 
         .debug-box { background: #222; color: #0f0; padding: 15px; font-family: monospace; overflow-x: auto; border-radius: 5px; margin-top: 40px; text-align: left; border: 1px solid #444; max-width: 1200px; margin-left: auto; margin-right: auto; }
+        
+        /* Detale Info */
         .info-detail { margin-bottom: 8px; font-size: 0.95rem; }
         .info-label { font-weight: 600; color: #555; width: 100px; display: inline-block; }
       `}</style>
@@ -185,7 +207,7 @@ function App() {
         </button>
       </header>
       
-      {/* Kontener Alertów */}
+      {/* SEKCJA ALERTÓW */}
       <div className="alerts-container">
           {error && <div className="alert-box alert-critical">⚠️ {error}</div>}
           
@@ -202,8 +224,8 @@ function App() {
             <h2>ℹ️ Status Urządzenia</h2>
             <div style={{display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap'}}>
                 <div>
-                    <div className="info-detail"><span className="info-label">Urządzenie:</span> {currentData?.sysName}</div>
-                    <div className="info-detail"><span className="info-label">Opis:</span> {currentData?.sysDescr}</div>
+                    <div className="info-detail"><span className="info-label">Urządzenie:</span> {currentData?.sysName || 'Ładowanie...'}</div>
+                    <div className="info-detail"><span className="info-label">Opis:</span> {currentData?.sysDescr || '...'}</div>
                     <div className="info-detail"><span className="info-label">Lokalizacja:</span> {currentData?.sysLocation || 'Brak danych'}</div>
                     <div className="info-detail"><span className="info-label">Kontakt:</span> {currentData?.sysContact || 'Brak danych'}</div>
                 </div>
@@ -229,14 +251,8 @@ function App() {
                         <XAxis dataKey="time" />
                         <YAxis domain={[0, 100]} unit="%" />
                         <Tooltip />
-                        <Line 
-                            type="linear" 
-                            dataKey="cpu" 
-                            stroke="#e74c3c" 
-                            strokeWidth={3} 
-                            dot={false} 
-                            isAnimationActive={false} 
-                        />
+                        {/* Używamy typu 'linear' dla prostych linii zamiast krzywych */}
+                        <Line type="linear" dataKey="cpu" stroke="#e74c3c" strokeWidth={3} dot={false} isAnimationActive={false} />
                         <ReferenceLine y={80} stroke="red" strokeDasharray="3 3" />
                     </LineChart>
                 </ResponsiveContainer>
@@ -256,14 +272,8 @@ function App() {
                         <XAxis dataKey="time" />
                         <YAxis tickFormatter={(value) => formatBytes(value, 0)} />
                         <Tooltip formatter={(value) => [formatBytes(value), 'RAM']} />
-                        <Line 
-                            type="linear" 
-                            dataKey="ram" 
-                            stroke="#3498db" 
-                            strokeWidth={3} 
-                            dot={false} 
-                            isAnimationActive={false} 
-                        />
+                        <Legend />
+                        <Line type="linear" dataKey="ram" stroke="#3498db" strokeWidth={3} dot={false} isAnimationActive={false} />
                     </LineChart>
                 </ResponsiveContainer>
             </div>

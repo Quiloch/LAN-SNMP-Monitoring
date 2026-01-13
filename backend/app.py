@@ -1,3 +1,28 @@
+import sys
+import os
+
+# --- KONFIGURACJA VENDORINGU (Musi być pierwsza!) ---
+# Dodajemy folder 'vendor' do ścieżki wyszukiwania bibliotek.
+# Dzięki temu Python załaduje nasze lokalne 'pysnmp' zamiast systemowego.
+base_dir = os.path.dirname(os.path.abspath(__file__))
+vendor_dir = os.path.join(base_dir, 'vendor')
+if os.path.exists(vendor_dir):
+    sys.path.insert(0, vendor_dir)
+# ----------------------------------------------------
+
+# # --- NAPRAWA ASYNCORE (Dla Python 3.12+) ---
+# try:
+#     import asyncore
+# except ImportError:
+#     try:
+#         import pyasyncore as asyncore
+#         sys.modules['asyncore'] = asyncore
+#         import asynchat
+#         sys.modules['asynchat'] = asynchat
+#     except ImportError:
+#         print("⚠️ OSTRZEŻENIE: Brak modułu 'pyasyncore'. Uruchom 'pip install pyasyncore'.")
+# # -------------------------------------------
+
 from flask import Flask, jsonify, render_template, send_file, request
 from flask_cors import CORS
 from datetime import datetime, timedelta
@@ -7,13 +32,14 @@ import time
 import threading
 import logging
 from influxdb import InfluxDBClient
-from snmp_scan import SNMPManager
 from config import SNMP_CONFIG
+
+# Importy lokalne
+from snmp_scan import SNMPManager
 from export import export_to_csv, export_to_influxdb
 from discovery import DeviceDiscovery
-import os
 from report import generate_pdf_report
-from io import BytesIO  # <--- WAŻNY IMPORT
+from io import BytesIO
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SNMP-Monitor")
@@ -31,13 +57,13 @@ influx_client = InfluxDBClient(
 
 try:
     influx_client.create_database(SNMP_CONFIG['influx_db'])
-    logger.info("Nawiązano połączenie z InfluxDB")
+    logger.info("📦 Połączono z bazą danych InfluxDB")
 except Exception as e:
-    logger.warning(f"Błąd inicjalizacji bazy danych: {e}")
+    logger.warning(f"⚠️ Ostrzeżenie InfluxDB: {e}")
 
 def background_monitoring():
     time.sleep(5)
-    logger.info("Uruchomiono proces monitorowania w tle")
+    logger.info("🟢 Uruchamianie monitoringu w tle...")
     while True:
         try:
             data = snmp_manager.get_snmp_data()
@@ -47,7 +73,7 @@ def background_monitoring():
                 export_to_influxdb(data)
                 logger.debug(f"Zarchiwizowano dane: CPU={data.get('cpuUsage')}%")
             else:
-                logger.warning("Błąd odczytu SNMP lub brak danych")
+                pass 
         except Exception as e:
             logger.error(f"Wyjątek w wątku monitorującym: {e}")
         time.sleep(10)
@@ -122,21 +148,10 @@ def export_pdf_report():
     try:
         data = snmp_manager.get_snmp_data()
         filename = f"raport_sieciowy_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        
-        # 1. Generujemy PDF do zmiennej (bajtów)
         pdf_bytes = generate_pdf_report(data)
-        
-        # 2. Tworzymy wirtualny plik w pamięci
         buffer = BytesIO(pdf_bytes)
         buffer.seek(0)
-        
-        # 3. Wysyłamy do przeglądarki
-        return send_file(
-            buffer,
-            as_attachment=True,
-            download_name=filename,
-            mimetype='application/pdf'
-        )
+        return send_file(buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
     except Exception as e:
         logger.error(f"Błąd generowania PDF: {e}")
         return jsonify({"error": str(e)}), 500
