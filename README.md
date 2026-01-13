@@ -48,18 +48,22 @@ Wykonaj te kroki tylko raz po pobraniu projektu na dysk.
 1. Klonowanie repozytorium
 
 git clone https://github.com/Quiloch/LAN-SNMP-Monitoring.git
+
 cd LAN-SNMP-Monitoring
 
 
 2. Konfiguracja Backendu (Python)
+
 Otwórz terminal w folderze projektu:
 
 cd backend
 
 Instalacja wymaganych bibliotek:
 
-Jeśli komenda 'pip' nie działa, spróbuj "python -m pip install -r requirements.txt"
 pip install -r requirements.txt
+
+Jeśli komenda 'pip' nie działa, spróbuj "python -m pip install -r requirements.txt"
+
 
 
 Ważne: Utwórz w folderze backend nowy plik o nazwie .env i wklej do niego poniższą konfigurację (jest ona ignorowana przez Git dla bezpieczeństwa):
