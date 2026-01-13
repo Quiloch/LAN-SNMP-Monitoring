@@ -1,0 +1,72 @@
+version: "3.8"
+
+networks:
+  lan-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.100.0/24
+
+services:
+  # Baza danych do historii wykresów
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./influxdb_data:/var/lib/influxdb
+    environment:
+      - INFLUXDB_DB=snmp_data
+    networks:
+      lan-network:
+
+  snmp-simulator:
+    build: ./snmpsim
+    container_name: snmp-simulator
+    user: snmpsim
+    privileged: true
+    ports:
+      - "161:161/udp"     # Standardowy port SNMP
+      - "16100:16100/udp" # Alternatywny port (jeśli 161 zajęty na Windows)
+    networks:
+      lan-network:
+        ipv4_address: 192.168.100.10
+    volumes:
+      - ./snmpsim/data:/usr/local/share/snmpsim/data
+    command: >
+      snmpsim-command-responder 
+      --agent-udpv4-endpoint=0.0.0.0:161
+      --agent-udpv4-endpoint=0.0.0.0:16100
+      --data-dir=/usr/local/share/snmpsim/data
+      --v3-user=simulator
+      --v3-auth-key=snmpauth123
+      --v3-auth-proto=MD5
+      --v3-priv-key=snmppriv123
+      --v3-priv-proto=DES
+      --log-level=debug
+
+  backend:
+    build: ./backend
+    container_name: snmp-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app     # <--- TO JEST NAJWAŻNIEJSZA LINIA!
+    depends_on:
+      - snmp-simulator
+    networks:
+      lan-network:
+    cap_add:
+      - NET_ADMIN
+    command: python app.py
+
+  frontend:
+    build: ./frontend
+    container_name: snmp-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      lan-network:

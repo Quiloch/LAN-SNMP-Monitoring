@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SNMP Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f5f6fa; }
+        h1 { color: #2c3e50; text-align: center; }
+        .card { 
+            background: white; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .error { color: #e74c3c; font-weight: bold; }
+        
+        /* Styl dla wykresów */
+        .chart-container { height: 400px; }
+    </style>
+</head>
+<body>
+    <h1>📡 Panel Monitoringu SNMP</h1>
+    
+    <div class="card">
+        <h2>Aktualne Dane (Live)</h2>
+        <pre id="current-data">Ładowanie...</pre>
+        <div id="debug-info" style="color: grey; font-size: 0.8em;"></div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div id="cpu-chart" class="chart-container"></div>
+        </div>
+        <div class="card">
+            <div id="ram-chart" class="chart-container"></div>
+        </div>
+    </div>
+
+    <!-- Dane z Flaska -->
+    <input type="hidden" id="history-data" value="{{ history }}">
+    <input type="hidden" id="current-data-raw" value="{{ data }}">
+
+    <script>
+        try {
+            // --- 1. Dekodowanie danych ---
+            const rawHistory = document.getElementById('history-data').value;
+            // Dekodowanie Base64 (uwzględniając polskie znaki/utf-8)
+            const decodedHistory = decodeURIComponent(escape(window.atob(rawHistory)));
+            const historyData = JSON.parse(decodedHistory);
+            
+            console.log("History Data:", historyData); // Zobacz w konsoli przeglądarki (F12)
+
+            const rawCurrent = document.getElementById('current-data-raw').value;
+            // Hack na zamianę pojedynczych cudzysłowów z Pythona na podwójne dla JSON
+            let currentJsonStr = rawCurrent.replace(/'/g, '"');
+            // Fix na None -> null
+            currentJsonStr = currentJsonStr.replace(/None/g, 'null');
+            
+            try {
+                const parsedCurrent = JSON.parse(currentJsonStr);
+                document.getElementById('current-data').textContent = JSON.stringify(parsedCurrent, null, 2);
+            } catch (e) {
+                document.getElementById('current-data').textContent = rawCurrent;
+            }
+
+            // --- 2. Przygotowanie danych do wykresów ---
+            
+            if (!historyData || historyData.length === 0) {
+                document.getElementById('debug-info').textContent = "Brak danych historycznych w bazie.";
+            } else {
+                document.getElementById('debug-info').textContent = `Załadowano ${historyData.length} punktów danych.`;
+            }
+
+            // Mapowanie danych - zabezpieczamy się przed brakiem pól
+            const timestamps = historyData.map(item => item.timestamp);
+            
+            const cpuValues = historyData.map(item => {
+                if (item.data && item.data.cpuUsage !== undefined) return item.data.cpuUsage;
+                return 0; // Wartość domyślna
+            });
+
+            const ramValues = historyData.map(item => {
+                if (item.data && item.data.ramUsage !== undefined) return item.data.ramUsage;
+                return 0; // Wartość domyślna
+            });
+
+            // --- 3. Rysowanie CPU ---
+            const cpuTrace = {
+                x: timestamps,
+                y: cpuValues,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'CPU %',
+                line: { color: '#e74c3c', width: 2 },
+                fill: 'tozeroy'
+            };
+
+            const layoutCpu = {
+                title: 'Obciążenie CPU (%)',
+                autosize: true,
+                margin: { t: 40, r: 20, l: 40, b: 40 },
+                xaxis: { title: 'Czas' },
+                yaxis: { range: [0, 100] }
+            };
+
+            Plotly.newPlot('cpu-chart', [cpuTrace], layoutCpu);
+            
+            // --- 4. Rysowanie RAM ---
+            const ramTrace = {
+                x: timestamps,
+                y: ramValues,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'RAM (Bytes)',
+                line: { color: '#3498db', width: 2 }
+            };
+
+            const layoutRam = {
+                title: 'Zużycie RAM (Bytes)',
+                autosize: true,
+                margin: { t: 40, r: 20, l: 60, b: 40 },
+                xaxis: { title: 'Czas' }
+            };
+
+            Plotly.newPlot('ram-chart', [ramTrace], layoutRam);
+
+            // Automatyczne odświeżanie strony co 30 sekund
+            setTimeout(() => { window.location.reload(); }, 30000);
+
+        } catch (e) {
+            console.error("Błąd krytyczny JS:", e);
+            document.getElementById('current-data').innerHTML += `<div class="error"><br>❌ Błąd wizualizacji: ${e.message}</div>`;
+        }
+    </script>
+</body>
+</html>
