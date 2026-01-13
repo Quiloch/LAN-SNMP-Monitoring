@@ -11,16 +11,16 @@ if os.path.exists(vendor_dir):
 # ----------------------------------------------------
 
 # # --- NAPRAWA ASYNCORE (Dla Python 3.12+) ---
-# try:
-#     import asyncore
-# except ImportError:
-#     try:
-#         import pyasyncore as asyncore
-#         sys.modules['asyncore'] = asyncore
-#         import asynchat
-#         sys.modules['asynchat'] = asynchat
-#     except ImportError:
-#         print("⚠️ OSTRZEŻENIE: Brak modułu 'pyasyncore'. Uruchom 'pip install pyasyncore'.")
+try:
+    import asyncore
+except ImportError:
+    try:
+        import pyasyncore as asyncore
+        sys.modules['asyncore'] = asyncore
+        import asynchat
+        sys.modules['asynchat'] = asynchat
+    except ImportError:
+        print("⚠️ OSTRZEŻENIE: Brak modułu 'pyasyncore'. Uruchom 'pip install pyasyncore'.")
 # # -------------------------------------------
 
 from flask import Flask, jsonify, render_template, send_file, request
