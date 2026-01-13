@@ -36,35 +36,51 @@ def clean_text(text):
     for k, v in replacements.items(): text = text.replace(k, v)
     return text
 
-def create_chart_image(history_data):
-    """Generuje plik PNG z wykresem CPU"""
-    if not history_data or len(history_data) < 2: 
+def safe_int(value):
+    try:
+        return int(value) if value else 0
+    except: return 0
+
+def create_chart_image(data_subset, metric_type, title, ylabel, color):
+    """Generuje plik PNG z wykresem dla zadanego wycinka danych"""
+    if not data_subset or len(data_subset) < 2: 
         return None
     
-    # Przygotowanie danych (odwracamy, żeby najnowsze były po prawej)
-    # Zakładamy, że history_data przychodzi posortowane od najnowszych
-    data_to_plot = list(reversed(history_data[:20])) # Ostatnie 20 punktów
+    # Przygotowanie danych z przekazanego podzbioru (data_subset)
+    # Lista jest już w kolejności chronologicznej (najstarsze -> najnowsze)
+    timestamps = [item['timestamp'][11:19] for item in data_to_plot] # HH:MM:SS
     
-    timestamps = [item['timestamp'][11:19] for item in data_to_plot] # Tylko HH:MM:SS
-    cpu_values = [float(item['data']['cpuUsage']) for item in data_to_plot]
+    values = []
+    for item in data_subset:
+        val = 0
+        try:
+            if metric_type == 'cpu':
+                val = float(item['data']['cpuUsage'])
+            elif metric_type == 'ram':
+                # Konwersja na MB dla czytelności
+                val = float(item['data']['ramUsage']) / 1024 / 1024
+        except:
+            val = 0
+        values.append(val)
     
     plt.figure(figsize=(10, 4))
-    plt.plot(timestamps, cpu_values, label='CPU %', color='red', linewidth=2, marker='o', markersize=4)
+    plt.plot(timestamps, values, label=title, color=color, linewidth=2, marker='o', markersize=4)
     
-    plt.title('Obciazenie CPU (Ostatnie pomiary)')
+    plt.title(title)
     plt.xlabel('Czas')
-    plt.ylabel('CPU %')
+    plt.ylabel(ylabel)
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.legend()
-    plt.ylim(0, 100)
     
-    # Ograniczenie etykiet osi X
-    if len(timestamps) > 5:
-        plt.xticks(ticks=range(0, len(timestamps), max(1, len(timestamps)//5)), rotation=45)
+    if metric_type == 'cpu':
+        plt.ylim(0, 100)
+    
+    # Redukcja etykiet osi X
+    if len(timestamps) > 8:
+        plt.xticks(ticks=range(0, len(timestamps), max(1, len(timestamps)//8)), rotation=45)
     
     plt.tight_layout()
     
-    # Zapis do pliku tymczasowego
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
     plt.savefig(temp_file.name, format='png', dpi=100)
     plt.close()
@@ -74,7 +90,7 @@ def generate_pdf_report(current_data, history_data=None):
     pdf = PDFReport()
     pdf.add_page()
     
-    # 1. Informacje
+    # --- 1. Informacje ---
     pdf.chapter_title('1. Informacje o Urzadzeniu')
     pdf.set_font('Arial', '', 10)
     info = [
@@ -88,58 +104,124 @@ def generate_pdf_report(current_data, history_data=None):
         pdf.multi_cell(0, 6, v)
     pdf.ln(5)
 
-    # 2. Zasoby (Aktualne)
+    # --- 2. Zasoby (Aktualne) ---
     pdf.chapter_title('2. Aktualny Stan Zasobow')
     cpu = current_data.get('cpuUsage', '0')
-    ram = current_data.get('ramUsage', '0')
-    
-    try: ram_mb = float(ram)/1024/1024
+    try:
+        ram_mb = float(current_data.get('ramUsage', 0)) / 1024 / 1024
     except: ram_mb = 0
     
     pdf.cell(35, 6, 'CPU:', 0, 0)
-    pdf.set_text_color(200, 0, 0) if float(cpu) > 80 else pdf.set_text_color(0, 128, 0)
+    if float(cpu) > 80:
+        pdf.set_text_color(200, 0, 0)
+    else:
+        pdf.set_text_color(0, 128, 0)
     pdf.cell(0, 6, f"{cpu}%", 0, 1)
-    pdf.set_text_color(0)
+    pdf.set_text_color(0, 0, 0)
     
     pdf.cell(35, 6, 'RAM:', 0, 0)
     pdf.cell(0, 6, f"{ram_mb:.2f} MB", 0, 1)
     pdf.ln(8)
 
-    # 3. Wykres Historii (NOWE)
-    if history_data:
-        pdf.chapter_title('3. Wykres Historii CPU')
-        chart_path = create_chart_image(history_data)
-        if chart_path:
-            # Wstawienie obrazka
-            pdf.image(chart_path, x=10, w=190)
-            os.remove(chart_path) # Usunięcie pliku tymczasowego
-            pdf.ln(5)
+    # --- 3. Interfejsy ---
+    pdf.chapter_title('3. Status Interfejsow')
+    pdf.set_font('Arial', 'B', 9)
+    w = [40, 20, 30, 30, 35, 35] 
+    headers = ['Interfejs', 'Status', 'Ruch IN', 'Ruch OUT', 'Bledy IN', 'Bledy OUT']
+    
+    for i, h in enumerate(headers):
+        pdf.cell(w[i], 7, h, 1, 0, 'C')
+    pdf.ln()
+    
+    pdf.set_font('Arial', '', 9)
+    for i in [1, 2]:
+        prefix = f"if{i}"
+        name = clean_text(current_data.get(f'{prefix}_Name', f'Fa0/{i}'))
+        status_val = str(current_data.get(f'{prefix}_Status', '2')).strip()
+        
+        try:
+            in_mb = float(current_data.get(f'{prefix}_In', 0)) / 1048576
+            out_mb = float(current_data.get(f'{prefix}_Out', 0)) / 1048576
+            in_str = f"{in_mb:.1f} MB"
+            out_str = f"{out_mb:.1f} MB"
+        except:
+            in_str = "0 MB"
+            out_str = "0 MB"
 
-    # 4. Tabela Historii (NOWE)
+        err_in = safe_int(current_data.get(f'{prefix}_ErrIn', '0'))
+        err_out = safe_int(current_data.get(f'{prefix}_ErrOut', '0'))
+        
+        status_txt = "UP" if status_val == '1' else "DOWN"
+
+        pdf.cell(w[0], 7, name, 1)
+        if status_val == '1': pdf.set_text_color(0, 128, 0)
+        else: pdf.set_text_color(200, 0, 0)
+        pdf.cell(w[1], 7, status_txt, 1, 0, 'C')
+        pdf.set_text_color(0)
+        pdf.cell(w[2], 7, in_str, 1, 0, 'R')
+        pdf.cell(w[3], 7, out_str, 1, 0, 'R')
+        if err_in > 0: pdf.set_text_color(200, 0, 0)
+        pdf.cell(w[4], 7, str(err_in), 1, 0, 'C')
+        pdf.set_text_color(0)
+        if err_out > 0: pdf.set_text_color(200, 0, 0)
+        pdf.cell(w[5], 7, str(err_out), 1, 0, 'C')
+        pdf.set_text_color(0)
+        pdf.ln()
+
+    # --- Przygotowanie danych historycznych ---
+    # Bierzemy ostatnie 15 punktów - te same dane dla tabeli i wykresów
+    recent_data = []
     if history_data:
-        pdf.add_page() # Nowa strona dla tabeli
-        pdf.chapter_title('4. Ostatnie Pomiary (Tabela)')
+        # Sortujemy chronologicznie (najstarsze -> najnowsze) dla wykresu
+        # history_data[-15:] bierze 15 ostatnich elementów
+        recent_data = history_data[-15:] if len(history_data) > 15 else history_data
         
-        # Nagłówki
+        # Używamy zmiennej globalnej data_to_plot w create_chart_image, 
+        # ale tutaj przekazujemy jawnie recent_data do funkcji
+        global data_to_plot
+        data_to_plot = recent_data
+
+    if recent_data:
+        # Nowa strona dla historii
+        pdf.add_page()
+        
+        # --- 4. Wykresy ---
+        pdf.chapter_title('4. Wykresy Historii (Ostatnie 15 pomiarow)')
+        
+        # Wykres CPU
+        chart_cpu = create_chart_image(recent_data, 'cpu', 'Obciazenie CPU', '%', 'red')
+        if chart_cpu:
+            pdf.image(chart_cpu, x=10, w=190)
+            os.remove(chart_cpu)
+            pdf.ln(5)
+            
+        # Wykres RAM
+        chart_ram = create_chart_image(recent_data, 'ram', 'Zuzycie RAM', 'MB', 'blue')
+        if chart_ram:
+            pdf.image(chart_ram, x=10, w=190)
+            os.remove(chart_ram)
+            pdf.ln(10)
+
+        # --- 5. Tabela ---
+        pdf.chapter_title('5. Tabela Pomiary')
+        
         pdf.set_font('Arial', 'B', 10)
-        col_w = [60, 30, 40] # Szerokości kolumn
-        headers = ['Czas', 'CPU %', 'RAM (MB)']
-        
-        # Wyśrodkowanie
+        col_w = [50, 30, 40]
         left_margin = (210 - sum(col_w)) / 2
         pdf.set_x(left_margin)
         
-        for i, h in enumerate(headers):
-            pdf.cell(col_w[i], 7, h, 1, 0, 'C', True)
+        pdf.cell(col_w[0], 7, 'Czas', 1, 0, 'C', True)
+        pdf.cell(col_w[1], 7, 'CPU %', 1, 0, 'C', True)
+        pdf.cell(col_w[2], 7, 'RAM (MB)', 1, 0, 'C', True)
         pdf.ln()
         
         pdf.set_font('Arial', '', 10)
         
-        # Bierzemy ostatnie 15 wpisów
-        for item in history_data[:15]:
+        # Dla tabeli odwracamy kolejność (najnowszy na górze)
+        for item in reversed(recent_data):
             ts = item['timestamp'].replace('T', ' ')[:19]
             c = item['data']['cpuUsage']
-            try: r = f"{float(item['data']['ramUsage'])/1024/1024:.2f}"
+            try: r = f"{float(item['data']['ramUsage'])/1048576:.2f}"
             except: r = "0"
             
             pdf.set_x(left_margin)
@@ -147,5 +229,9 @@ def generate_pdf_report(current_data, history_data=None):
             pdf.cell(col_w[1], 7, str(c), 1, 0, 'C')
             pdf.cell(col_w[2], 7, r, 1, 0, 'C')
             pdf.ln()
+            
+    else:
+        pdf.ln(10)
+        pdf.cell(0, 10, "Brak wystarczajacych danych historycznych.", 0, 1, 'C')
 
     return pdf.output(dest='S').encode('latin-1')
