@@ -51,7 +51,7 @@ def export_to_influxdb(data):
                     }
                     points.append(point)
                 else:
-                    # żeby uniknąć mieszania typów w InfluxDB pomijamy tekstowe wartości
+                    # żeby uniknąć mieszania typów w InfluxDB pomijamy string
                     pass
                     
             except ValueError:

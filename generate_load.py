@@ -64,7 +64,7 @@ def generate_data():
         try:
             with open(DATA_FILE, "w") as f:
                 f.write(content)
-            # Restart jest konieczny, aby symulator wczytał nowe linie
+            # restart w celu aktualizacji danych
             subprocess.run("docker restart snmp-simulator", shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             print(f"⚡ Zaktualizowano: Uptime={uptime_ticks}, Lokalizacja=Serwerownia B")
         except Exception as e:

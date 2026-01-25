@@ -47,7 +47,7 @@ def create_chart_image(data_subset, metric_type, title, ylabel, color):
         return None
     
     # Przygotowanie danych z przekazanego podzbioru (data_subset)
-    # Lista jest już w kolejności chronologicznej (najstarsze -> najnowsze)
+    # Lista jest ustawiana chronologicznie od najstaraszego
     timestamps = [item['timestamp'][11:19] for item in data_to_plot] # HH:MM:SS
     
     values = []
@@ -90,7 +90,7 @@ def generate_pdf_report(current_data, history_data=None):
     pdf = PDFReport()
     pdf.add_page()
     
-    # --- 1. Informacje ---
+    # Podstawowe informacje
     pdf.chapter_title('1. Informacje o Urzadzeniu')
     pdf.set_font('Arial', '', 10)
     info = [
@@ -104,7 +104,7 @@ def generate_pdf_report(current_data, history_data=None):
         pdf.multi_cell(0, 6, v)
     pdf.ln(5)
 
-    # --- 2. Zasoby (Aktualne) ---
+    # Bieżące zużycie zasobów
     pdf.chapter_title('2. Aktualny Stan Zasobow')
     cpu = current_data.get('cpuUsage', '0')
     try:
@@ -123,11 +123,11 @@ def generate_pdf_report(current_data, history_data=None):
     pdf.cell(0, 6, f"{ram_mb:.2f} MB", 0, 1)
     pdf.ln(8)
 
-    # --- 3. Interfejsy ---
+    # Interfejsy
     pdf.chapter_title('3. Status Interfejsow')
     pdf.set_font('Arial', 'B', 9)
     w = [40, 20, 30, 30, 35, 35] 
-    headers = ['Interfejs', 'Status', 'Ruch IN', 'Ruch OUT', 'Bledy IN', 'Bledy OUT']
+    headers = ['Interfejs', 'Status', 'Ruch wejściowy', 'Ruch wyjściowy', 'Bledy wejściowe', 'Bledy wyjściowe']
     
     for i, h in enumerate(headers):
         pdf.cell(w[i], 7, h, 1, 0, 'C')
@@ -168,11 +168,11 @@ def generate_pdf_report(current_data, history_data=None):
         pdf.set_text_color(0)
         pdf.ln()
 
-    # --- Przygotowanie danych historycznych ---
-    # Bierzemy ostatnie 15 punktów - te same dane dla tabeli i wykresów
+    # Przygotowanie danych historycznych do PDF
+    # Zebranie ostatnich 15 punktów
     recent_data = []
     if history_data:
-        # Sortujemy chronologicznie (najstarsze -> najnowsze) dla wykresu
+        # Sortujemy chronologicznie
         # history_data[-15:] bierze 15 ostatnich elementów
         recent_data = history_data[-15:] if len(history_data) > 15 else history_data
         
@@ -185,7 +185,7 @@ def generate_pdf_report(current_data, history_data=None):
         # Nowa strona dla historii
         pdf.add_page()
         
-        # --- 4. Wykresy ---
+        # Wykresy
         pdf.chapter_title('4. Wykresy Historii (Ostatnie 15 pomiarow)')
         
         # Wykres CPU
@@ -202,7 +202,7 @@ def generate_pdf_report(current_data, history_data=None):
             os.remove(chart_ram)
             pdf.ln(10)
 
-        # --- 5. Tabela ---
+        # Tablela danych z pomiarami
         pdf.chapter_title('5. Tabela Pomiary')
         
         pdf.set_font('Arial', 'B', 10)
@@ -217,7 +217,7 @@ def generate_pdf_report(current_data, history_data=None):
         
         pdf.set_font('Arial', '', 10)
         
-        # Dla tabeli odwracamy kolejność (najnowszy na górze)
+        # Dla tabeli odwracamy kolejność (najnowszy na górze)(głównie dla ułatwienia odczytu i porównania z wykresami)
         for item in reversed(recent_data):
             ts = item['timestamp'].replace('T', ' ')[:19]
             c = item['data']['cpuUsage']

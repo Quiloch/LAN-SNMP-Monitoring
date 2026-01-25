@@ -25,7 +25,7 @@ CORS(app)
 snmp_manager = SNMPManager()
 device_discovery = DeviceDiscovery()
 
-# --- Połączenie z InfluxDB (w Dockerze) ---
+# Połączenie z InfluxDB (w Dockerze)
 influx_client = InfluxDBClient(
     host=SNMP_CONFIG['influx_host'],
     port=SNMP_CONFIG['influx_port']
@@ -37,10 +37,10 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Ostrzeżenie InfluxDB: {e}")
 
-# --- Wątek w tle (Scheduler) ---
+# Wątek zbierania danych w tle
 def background_monitoring():
     """Zbiera dane co 10s i zapisuje do bazy"""
-    time.sleep(5)
+    time.sleep(10)
     logger.info("🟢 Uruchamianie monitoringu w tle...")
     
     while True:
@@ -52,7 +52,7 @@ def background_monitoring():
                 export_to_influxdb(data)
                 logger.debug(f"💾 Zapisano dane w tle: CPU={data.get('cpuUsage')}%")
             else:
-                pass # Cicha praca przy błędach
+                pass
         except Exception as e:
             logger.error(f"❌ Błąd wątku monitoringu: {e}")
         
@@ -62,7 +62,7 @@ if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
     monitor_thread = threading.Thread(target=background_monitoring, daemon=True)
     monitor_thread.start()
 
-# --- Funkcja pobierania historii ---
+# Funkcja pobierania historii danych
 def get_history_data(hours=1):
     try:
         influx_client.switch_database(SNMP_CONFIG['influx_db'])
@@ -91,7 +91,7 @@ def get_history_data(hours=1):
         app.logger.error(f"Błąd historii DB: {str(e)}")
         return []
 
-# --- Endpointy API ---
+# Endpointy API (głównie do testowania sprawności protokołu) 
 
 @app.route('/')
 def home():
@@ -121,15 +121,16 @@ def get_status():
 @app.route('/export/report/pdf')
 def export_pdf_report():
     try:
-        # 1. Pobierz aktualne dane
+        # Pobiera aktualne dane
         data = snmp_manager.get_snmp_data()
         
-        # 2. Pobierz historię dla wykresu i tabeli (ostatnia godzina wystarczy)
+        # Pobiera historię dla wykresu i tabeli (ostatnia godzina)
         history = get_history_data(hours=1)
         
+        # Tworzenie pliku z datą utworzenia
         filename = f"raport_sieciowy_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         
-        # 3. Generuj PDF przekazując OBA zbiory danych
+        # Generowanie PDF przekazując zbiory danych
         pdf_bytes = generate_pdf_report(data, history)
         
         buffer = BytesIO(pdf_bytes)

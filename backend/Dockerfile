@@ -1,5 +1,6 @@
 FROM python:3.10 
 
+# Zainstalowanie iputils, inaczej "ping" nie był obsługiwany przez Docker
 RUN apt update && apt install -y \
     iputils-ping \
     snmp \
@@ -12,7 +13,8 @@ WORKDIR /app
 COPY . /app
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Dodanie reguł iptables przed uruchomieniem aplikacji
+# Wymagane było dodanie reguł iptables przed uruchomieniem aplikacji
+# w innym wypadku generowało błędy/nie uzyskiwalo połączenia
 CMD iptables -A INPUT -p udp --dport 161 -j ACCEPT && \
     iptables -A INPUT -p udp --sport 161 -j ACCEPT && \
     iptables -A INPUT -p udp --dport 5000 -j ACCEPT && \

@@ -52,7 +52,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./backend:/app     # <--- TO JEST NAJWAŻNIEJSZA LINIA!
+      - ./backend:/app
     depends_on:
       - snmp-simulator
     networks:

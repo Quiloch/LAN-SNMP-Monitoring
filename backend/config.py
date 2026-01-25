@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-# Załaduj zmienne środowiskowe z pliku .env
+# Załaduj zmiennych z .env
 load_dotenv()
 
 SNMP_CONFIG = {
@@ -24,22 +24,22 @@ SNMP_CONFIG = {
 }
 
 
-# Definicje OID dla urządzeń Cisco (Wersja Rozszerzona)
+# Definicje OID dla urządzeń Cisco
 OIDS = {
-    # --- System Info ---
+    # Informacje podstawowe
     "sysName": "1.3.6.1.2.1.1.5.0",       # Nazwa hosta
     "sysDescr": "1.3.6.1.2.1.1.1.0",      # Opis
     "sysContact": "1.3.6.1.2.1.1.4.0",    # Kontakt 
     "sysLocation": "1.3.6.1.2.1.1.6.0",   # Lokalizacja 
     "sysUpTime": "1.3.6.1.2.1.1.3.0",     # Czas działania 
     
-    # --- Zasoby ---
+    # Informacje o zasobach
     "cpuUsage": "1.3.6.1.4.1.9.9.109.1.1.1.1.6",  # Wykorzystanie CPU
     "ramTotal": "1.3.6.1.4.1.9.9.48.1.1.1.6",     # Całkowita pamięć RAM
     "ramFree": "1.3.6.1.4.1.9.9.48.1.1.1.5",      # Wolna pamięć RAM
     "ramUsage": "1.3.6.1.4.1.9.9.48.1.1.1.5",     # Wykorzystanie RAM (obliczane jako (Total - Free)/Total * 100)
     
-    # --- Interfejs 1 (GigabitEthernet0/0) ---
+    # Interfejs 1 (GigabitEthernet0/0)
     "if1_Name": "1.3.6.1.2.1.2.2.1.2.1",
     "if1_Status": "1.3.6.1.2.1.2.2.1.8.1",
     "if1_In": "1.3.6.1.2.1.2.2.1.10.1",
@@ -47,7 +47,7 @@ OIDS = {
     "if1_ErrIn": "1.3.6.1.2.1.2.2.1.14.1",   # Błędy wejścia 
     "if1_ErrOut": "1.3.6.1.2.1.2.2.1.20.1",  # Błędy wyjścia 
 
-    # --- Interfejs 2 (GigabitEthernet0/1) ---
+    # Interfejs 2 (GigabitEthernet0/1) 
     "if2_Name": "1.3.6.1.2.1.2.2.1.2.2",
     "if2_Status": "1.3.6.1.2.1.2.2.1.8.2",
     "if2_In": "1.3.6.1.2.1.2.2.1.10.2",

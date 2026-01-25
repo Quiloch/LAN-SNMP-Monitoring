@@ -17,7 +17,7 @@ function App() {
   
   const intervalRef = useRef(null);
 
-  // --- Funkcje pomocnicze ---
+  // Funkcje pomocnicze 
   
   const formatBytes = (bytes, decimals = 2) => {
       if (!+bytes) return '0 B';
@@ -46,14 +46,14 @@ function App() {
       document.body.removeChild(link);
   };
 
-  // --- Główna logika danych ---
+  // Główna logika danych 
 
   // Funkcja sprawdzająca alerty (wyciągnięta, aby była dostępna w useEffect)
   const checkAlerts = (data) => {
       const newAlerts = [];
       const cpu = parseFloat(data.cpuUsage);
       
-      // Alert: Wysokie CPU
+      // Alert dla wysokiego CPU
       if (cpu > 80) {
           newAlerts.push({
               id: 1, 
@@ -62,7 +62,7 @@ function App() {
           });
       }
       
-      // Alert: Awaria interfejsu
+      // Alert dla awarii interfejsu
       if (data.if2_Status === '2') {
            newAlerts.push({
               id: 2, 
@@ -71,7 +71,7 @@ function App() {
           });
       }
 
-      // Alert: Błędy
+      // Alert błędów
       if (parseInt(data.if1_ErrIn, 10) > 0 || parseInt(data.if1_ErrOut, 10) > 0) {
           newAlerts.push({
               id: 3, 
@@ -85,7 +85,7 @@ function App() {
 
   const fetchData = async () => {
     try {
-      // setDebugInfo(`Pobieranie z ${API_URL}...`);
+      //setDebugInfo(`Pobieranie z ${API_URL}...`);
       const currentRes = await axios.get(`${API_URL}/snmp`);
       
       setDebugInfo(`Otrzymano dane: ${JSON.stringify(currentRes.data).substring(0, 50)}...`);
@@ -137,7 +137,7 @@ function App() {
   return (
     <div className="App">
       {/* STYLE CSS WBUDOWANE BEZPOŚREDNIO 
-          To gwarantuje, że style się załadują niezależnie od konfiguracji buildera
+          Dzieki temu cała konfiguracja znajduje sie w jednym miejscu
       */}
       <style>{`
         body { background-color: #f0f2f5; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -226,7 +226,7 @@ function App() {
       </div>
 
       <div className="dashboard-grid">
-        {/* Karta Statusu */}
+        {/* Karta statusu urządzenia*/}
         <div className="card full-width">
             <h2>ℹ️ Status Urządzenia</h2>
             <div style={{display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap'}}>
@@ -263,7 +263,7 @@ function App() {
                     </LineChart>
                 </ResponsiveContainer>
             </div>
-            {/* Wartość CPU - Czerwona jeśli > 80 */}
+            {/* Wartość CPU - czerwony jeśli > 80 */}
             <div className="stat-value" style={{color: parseFloat(currentData?.cpuUsage) > 80 ? '#c0392b' : '#2c3e50'}}>
                 {currentData?.cpuUsage}%
             </div>
@@ -289,7 +289,7 @@ function App() {
             </div>
         </div>
 
-        {/* Tabela Interfejsów */}
+        {/* Tabela interfejsów */}
         <div className="card full-width">
             <h3>🔌 Status Interfejsów</h3>
             <table className="interface-table">
@@ -342,7 +342,7 @@ function App() {
         </div>
       )}
 
-      {/* Przycisk Debuggera (Dół, Prawa strona) */}
+      {/* Przycisk Debuggera (Dół z prawej strony) */}
       <button className="btn-debug-toggle" onClick={() => setShowDebug(!showDebug)} title="Pokaż/Ukryj konsolę diagnostyczną">
         🛠️
       </button>
