@@ -6,15 +6,15 @@ import subprocess
 DATA_FILE = os.path.join("snmpsim", "data", "router.snmprec")
 
 def generate_data():
-    print(f"🚀 Uruchamiam generator danych (FULL)...")
+    print(f"Generator startuje...")
     
     traffic_in_1 = 1000000
     traffic_out_1 = 500000
     traffic_in_2 = 2000000
     traffic_out_2 = 100000
     
-    # Symulacja uptime (start od ok. 5 dni) w setnych sekundy (Timeticks)
-    uptime_ticks = 43200000 
+    # Symulacja uptime
+    uptime_ticks = 532231
 
     while True:
         cpu_load = random.randint(40, 100) 
@@ -28,13 +28,10 @@ def generate_data():
         
         if2_status = 2 if random.random() > 0.95 else 1
         
-        # Inkrementacja uptime (o 15 sekund * 100 setnych)
+        # Inkrementacja uptime
         uptime_ticks += 1500
 
         # Budowanie pliku .snmprec
-        # 4 = Typ OctetString (Tekst)
-        # 67 = Typ TimeTicks (Czas)
-        # 2 = Typ Integer (Liczba)
 
         content = f"""1.3.6.1.2.1.1.1.0|4|Cisco IOS Software, C2900 Software
 1.3.6.1.2.1.1.3.0|67|{uptime_ticks}         
@@ -64,7 +61,7 @@ def generate_data():
         try:
             with open(DATA_FILE, "w") as f:
                 f.write(content)
-            # restart w celu aktualizacji danych
+            # restart zeby dane mogly sie zaktualizowac
             subprocess.run("docker restart snmp-simulator", shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             print(f"⚡ Zaktualizowano: Uptime={uptime_ticks}, Lokalizacja=Serwerownia B")
         except Exception as e:
