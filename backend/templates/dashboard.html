@@ -45,18 +45,15 @@
 
     <script>
         try {
-            // --- 1. Dekodowanie danych ---
+            // Dekodowanie danych 
             const rawHistory = document.getElementById('history-data').value;
-            // Dekodowanie Base64 (uwzględniając polskie znaki/utf-8)
             const decodedHistory = decodeURIComponent(escape(window.atob(rawHistory)));
             const historyData = JSON.parse(decodedHistory);
             
-            console.log("History Data:", historyData); // Zobacz w konsoli przeglądarki (F12)
+            console.log("History Data:", historyData);
 
             const rawCurrent = document.getElementById('current-data-raw').value;
-            // Hack na zamianę pojedynczych cudzysłowów z Pythona na podwójne dla JSON
             let currentJsonStr = rawCurrent.replace(/'/g, '"');
-            // Fix na None -> null
             currentJsonStr = currentJsonStr.replace(/None/g, 'null');
             
             try {
@@ -66,7 +63,7 @@
                 document.getElementById('current-data').textContent = rawCurrent;
             }
 
-            // --- 2. Przygotowanie danych do wykresów ---
+            // Przygotowanie danych do wykresów
             
             if (!historyData || historyData.length === 0) {
                 document.getElementById('debug-info').textContent = "Brak danych historycznych w bazie.";
@@ -74,20 +71,20 @@
                 document.getElementById('debug-info').textContent = `Załadowano ${historyData.length} punktów danych.`;
             }
 
-            // Mapowanie danych - zabezpieczamy się przed brakiem pól
+            // Mapowanie danych 
             const timestamps = historyData.map(item => item.timestamp);
             
             const cpuValues = historyData.map(item => {
                 if (item.data && item.data.cpuUsage !== undefined) return item.data.cpuUsage;
-                return 0; // Wartość domyślna
+                return 0; 
             });
 
             const ramValues = historyData.map(item => {
                 if (item.data && item.data.ramUsage !== undefined) return item.data.ramUsage;
-                return 0; // Wartość domyślna
+                return 0;
             });
 
-            // --- 3. Rysowanie CPU ---
+            // Rysowanie CPU 
             const cpuTrace = {
                 x: timestamps,
                 y: cpuValues,
@@ -108,7 +105,7 @@
 
             Plotly.newPlot('cpu-chart', [cpuTrace], layoutCpu);
             
-            // --- 4. Rysowanie RAM ---
+            // Rysowanie RAM 
             const ramTrace = {
                 x: timestamps,
                 y: ramValues,

@@ -1,5 +1,18 @@
-from pysnmp.hlapi import *
+import logging
+from pysnmp.hlapi import (
+    getCmd,
+    SnmpEngine,
+    UsmUserData,
+    UdpTransportTarget,
+    ContextData,
+    ObjectType,
+    ObjectIdentity,
+    usmHMACMD5AuthProtocol,
+    usmDESPrivProtocol
+)
 from config import SNMP_CONFIG, OIDS
+
+logger = logging.getLogger("SNMP-Scan")
 
 class SNMPManager:
     def __init__(self):
@@ -17,7 +30,11 @@ class SNMPManager:
                     authProtocol=usmHMACMD5AuthProtocol,
                     privProtocol=usmDESPrivProtocol
                 ),
-                UdpTransportTarget((self.config['host'], self.config['port']), timeout=1.0, retries=1),
+                UdpTransportTarget(
+                    (self.config['host'], self.config['port']), 
+                    timeout=1.0, 
+                    retries=1
+                ),
                 ContextData(contextName=self.config['context_name']),
                 ObjectType(ObjectIdentity(oid))
             )
@@ -29,34 +46,33 @@ class SNMPManager:
             elif error_status:
                 return f"Error: {error_status.prettyPrint()}"
             else:
-                # zwrócenie wartości OID
                 for var_bind in var_binds:
                     return str(var_bind[1])
+                    
         except Exception as e:
             return f"Exception: {str(e)}"
 
     def get_snmp_data(self):
-        """Pobiera dane dla wszystkich zdefiniowanych OID-ów"""
         results = {}
-        # iteorwanie po wszystkich OID-ach z konfiguracji
         for key, oid in OIDS.items():
-            value = self.execute_snmp_query(oid)
-            results[key] = value
+            results[key] = self.execute_snmp_query(oid)
         return results
-
-    def test_connection(self):
-        """Szybki test połączenia pobierając opis systemu"""
-        res = self.execute_snmp_query(OIDS['sysDescr'])
-        if "Error" in res or "Exception" in res:
-            return "failed"
-        return "connected"
     
+    def test_connection(self):
+        if 'sysDescr' in OIDS:
+            res = self.execute_snmp_query(OIDS['sysDescr'])
+            if "Error" in res or "Exception" in res:
+                return "failed"
+            return "connected"
+        return "unknown"
+
     def get_devices(self):
-        """Zwraca listę urządzeń (mock lub z discovery)"""
-        # zwrócenie statycznej listy urządzeń jako przykład symulacji
+        """Zwraca statyczną konfigurację (zastępuje discovery)"""
+        # Ukrywamy hasła w odpowiedzi API
+        safe_config = {k: v for k, v in self.config.items() if 'password' not in k and 'key' not in k}
         return {
             self.config['host']: {
                 "status": self.test_connection(),
-                "config": self.config
+                "config": safe_config
             }
         }

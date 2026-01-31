@@ -5,6 +5,7 @@ python-dotenv
 influxdb
 fpdf
 pyasyncore
+pyasynchat
 pysnmp==4.4.12
 pyasn1==0.4.8
 pycryptodomex==3.21.0
