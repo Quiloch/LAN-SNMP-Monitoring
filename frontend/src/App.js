@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import './App.css';
 
 const API_URL = 'http://127.0.0.1:5001';
 
@@ -85,7 +86,6 @@ function App() {
 
   const fetchData = async () => {
     try {
-      //setDebugInfo(`Pobieranie z ${API_URL}...`);
       const currentRes = await axios.get(`${API_URL}/snmp`);
       
       setDebugInfo(`Otrzymano dane: ${JSON.stringify(currentRes.data).substring(0, 50)}...`);
@@ -135,75 +135,7 @@ function App() {
   if (loading && !currentData) return <div style={{padding: 20}}>Ładowanie systemu...</div>;
 
   return (
-    <div className="App">
-      {/* STYLE CSS WBUDOWANE BEZPOŚREDNIO 
-          Dzieki temu cała konfiguracja znajduje sie w jednym miejscu
-      */}
-      <style>{`
-        body { background-color: #f0f2f5; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .App { padding: 20px; text-align: center; padding-bottom: 80px; }
-        
-        /* Header */
-        .App-header { 
-            background-color: #2c3e50; 
-            padding: 20px; 
-            color: white; 
-            border-radius: 8px; 
-            margin-bottom: 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-        }
-        .header-content h1 { font-size: 1.5rem; margin: 0; }
-        
-        /* Grid */
-        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 1200px; margin: 0 auto; }
-        @media (min-width: 768px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } .full-width { grid-column: span 2; } }
-        
-        /* Karty */
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: left; }
-        .card h2 { margin-top: 0; color: #34495e; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; font-size: 1.2rem; }
-        
-        /* Tabela */
-        .interface-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .interface-table th, .interface-table td { padding: 12px; border-bottom: 1px solid #eee; }
-        .interface-table th { text-align: left; background-color: #f8f9fa; color: #7f8c8d; }
-        
-        /* Statystyki */
-        .stat-value { font-size: 2.5rem; font-weight: bold; text-align: center; margin-top: 10px; color: #2c3e50; }
-        
-        /* Status Badges */
-        .status-badge { padding: 5px 10px; border-radius: 4px; font-weight: bold; }
-        .status-online { background: #d5f5e3; color: #27ae60; }
-        .status-offline { background: #fadbd8; color: #c0392b; }
-        
-        /* Alerty */
-        .alerts-container { max-width: 1200px; margin: 0 auto 20px auto; }
-        .alert-box { 
-            padding: 15px; margin-bottom: 10px; border-radius: 8px; text-align: left; font-weight: bold; border-left: 5px solid; 
-            animation: pulse 2s infinite; 
-        }
-        .alert-critical { background-color: #fadbd8; color: #c0392b; border-color: #e74c3c; }
-        .alert-warning { background-color: #fcf3cf; color: #9a7d0a; border-color: #f1c40f; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
-        
-        /* Przycisk */
-        .btn-report { 
-            background-color: #3498db; color: white; border: none; padding: 10px 20px; 
-            border-radius: 5px; cursor: pointer; font-size: 1rem; transition: background 0.3s; font-weight: bold; 
-        }
-        .btn-report:hover { background-color: #2980b9; }
-
-        /* Debugger */
-        .btn-debug-toggle { position: fixed; bottom: 20px; right: 20px; background: #333; color: #fff; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; opacity: 0.5; transition: opacity 0.3s; font-size: 1.2rem; z-index: 9999; }
-        .btn-debug-toggle:hover { opacity: 1; }
-        .debug-box { background: #222; color: #0f0; padding: 15px; font-family: monospace; overflow-x: auto; border-radius: 5px; margin-top: 40px; text-align: left; border: 1px solid #444; max-width: 1200px; margin-left: auto; margin-right: auto; }
-        
-        .info-detail { margin-bottom: 8px; font-size: 0.95rem; }
-        .info-label { font-weight: 600; color: #555; width: 100px; display: inline-block; }
-      `}</style>
-
+    <div className="App">   
       <header className="App-header">
         <div className="header-content">
             <h1 style={{margin: 0}}>📡 SNMP Monitoring</h1>
@@ -214,7 +146,7 @@ function App() {
         </button>
       </header>
       
-      {/* KONTENER ALERTÓW */}
+      {/* Alerty */}
       <div className="alerts-container">
           {error && <div className="alert-box alert-critical">⚠️ {error}</div>}
           
