@@ -1,213 +1,226 @@
-# LAN SNMP Monitoring 📡
+# LAN SNMP Monitoring
 
-Kompletny system do monitorowania urządzeń sieciowych w czasie rzeczywistym z wykorzystaniem bezpiecznego protokołu SNMPv3.
+# 
 
-Aplikacja została stworzona jako projekt inżynierski. Składa się z backendu w Pythonie (Flask), nowoczesnego frontendu w React oraz infrastruktury symulacyjnej opartej na kontenerach Docker.
+# System monitorowania parametrów urządzeń sieciowych (CPU, RAM, interfejsy) w czasie rzeczywistym z wykorzystaniem protokołu SNMPv3. Aplikacja zrealizowana w architekturze klient-serwer.
 
-🚀 Funkcjonalności
+# 
 
-Monitoring SNMPv3: Bezpieczne pobieranie danych (użytkownik, hasło, szyfrowanie MD5 + DES) z urządzeń sieciowych.
+# Opis systemu
 
-Wizualizacja Live: Interaktywny dashboard (wykresy CPU, RAM, tabela interfejsów) oparty na React + Recharts.
+# 
 
-System Alertów: Automatyczne powiadomienia wizualne o stanach krytycznych (np. CPU > 80%, awaria interfejsu).
+# Projekt składa się z trzech głównych modułów:
 
-Historia Danych: Przechowywanie i analiza metryk historycznych dzięki bazie szeregów czasowych InfluxDB.
+# 
 
-Raportowanie: Generowanie profesjonalnych raportów PDF ze stanem urządzenia na żądanie (z wykresem historii).
+# Backend (Python/Flask): Odpowiada za cykliczne odpytywanie urządzeń poprzez SNMP, obsługę bazy danych oraz udostępnianie API REST.
 
-Symulacja: Wbudowany symulator routera Cisco oraz generator obciążenia do celów testowych i demonstracyjnych.
+# 
 
-# 🛠️ Architektura i Technologie
+# Frontend (React): Interfejs użytkownika prezentujący dane na wykresach oraz tabelach w czasie rzeczywistym.
 
-Projekt działa w architekturze hybrydowej, co ułatwia rozwój i testowanie:
+# 
 
-Infrastruktura (Docker): Baza danych i Symulator urządzenia działają w izolowanych kontenerach, zapewniając stabilne środowisko.
+# Infrastruktura (Docker): Konteneryzacja bazy danych (InfluxDB) oraz symulatora urządzeń sieciowych.
 
-Aplikacja (Host): Backend i Frontend uruchamiane są lokalnie na systemie hosta (Windows/Linux).
+# 
 
-Stos technologiczny:
+# Funkcjonalności
 
--Backend: Python 3.10+, Flask, PySNMP, FPDF
+# 
 
--Frontend: React 18, Recharts, Axios
+# Monitorowanie wykorzystania zasobów (CPU, RAM) oraz ruchu sieciowego.
 
--Baza Danych: InfluxDB (Docker)
+# 
 
--Symulator: snmpsim (Docker)
+# Obsługa protokołu SNMP w wersji 3 (bezpieczeństwo USM: uwierzytelnianie MD5, szyfrowanie DES).
 
-# 📋 Wymagania Wstępne
+# 
 
-Przed uruchomieniem upewnij się, że masz zainstalowane:
+# Wykrywanie stanów alarmowych (np. obciążenie CPU > 80%, awaria łącza).
 
--Docker Desktop (musi być uruchomiony w tle)
+# 
 
--Python 3.10+ (z dodanym do zmiennej środowiskowej PATH)
+# Archiwizacja danych pomiarowych w bazie szeregów czasowych.
 
--Node.js 16+ (niezbędny do obsługi frontendu i komendy npm)
+# 
 
--Git (do pobrania projektu)
+# Generowanie raportów PDF z historią pomiarów.
 
-# 🛠️ Instalacja i Pierwsze Uruchomienie
+# 
 
-Wykonaj te kroki tylko raz po pobraniu projektu na dysk.
+# Wymagania systemowe
 
-1. Klonowanie repozytorium
+# 
 
-git clone https://github.com/Quiloch/LAN-SNMP-Monitoring.git
+# Docker Desktop
 
-cd LAN-SNMP-Monitoring
+# 
 
+# Python 3.10 lub nowszy
 
-2. Konfiguracja Backendu (Python)
+# 
 
-Otwórz terminal w folderze projektu:
+# Node.js 16 lub nowszy
 
-cd backend
+# 
 
-Instalacja wymaganych bibliotek:
+# Git
 
-pip install -r requirements.txt
+# 
 
-Jeśli komenda 'pip' nie działa, spróbuj "python -m pip install -r requirements.txt"
+# Instalacja
 
+# 
 
+# 1\. Pobranie repozytorium
 
-Ważne: Utwórz w folderze backend nowy plik o nazwie .env i wklej do niego poniższą konfigurację (jest ona ignorowana przez Git dla bezpieczeństwa):
+# 
 
-SNMP_HOST=127.0.0.1
+# git clone \[https://github.com/Quiloch/LAN-SNMP-Monitoring.git](https://github.com/Quiloch/LAN-SNMP-Monitoring.git)
 
-SNMP_PORT=16100
+# cd LAN-SNMP-Monitoring
 
-SNMP_USERNAME=simulator
+# 
 
-SNMP_AUTH_PASSWORD=snmpauth123
+# 
 
-SNMP_PRIV_PASSWORD=snmppriv123
+# 2\. Konfiguracja Backendu
 
-SNMP_CONTEXT_NAME=router
+# 
 
-INFLUX_HOST=localhost
+# Należy zainstalować wymagane biblioteki Python w katalogu backend:
 
-INFLUX_PORT=8086
+# 
 
-INFLUX_DB=snmp_data
+# cd backend
 
+# pip install -r requirements.txt
 
+# 
 
+# 
 
+# W tym samym katalogu (backend) należy utworzyć plik .env zawierający konfigurację środowiska:
 
-3. Konfiguracja Frontendu (React)
+# 
 
-Wróć do głównego katalogu i wejdź do folderu frontend:
+# SNMP\_HOST=127.0.0.1
 
-cd ../frontend
+# SNMP\_PORT=16100
 
+# SNMP\_USERNAME=simulator
 
-Pobranie bibliotek (node_modules):
+# SNMP\_AUTH\_PASSWORD=snmpauth123
 
-npm install
+# SNMP\_PRIV\_PASSWORD=snmppriv123
 
+# SNMP\_CONTEXT\_NAME=router
 
-# ⚡ Codzienne Uruchamianie (Szybki Start)
+# INFLUX\_HOST=localhost
 
-Gdy masz już zainstalowane biblioteki, uruchomienie systemu jest bardzo proste.
+# INFLUX\_PORT=8086
 
-Metoda Automatyczna (Windows):
+# INFLUX\_DB=snmp\_data
 
-Upewnij się, że Docker Desktop jest włączony.
-W głównym folderze znajdź plik start_monitoring.bat.
-Kliknij go dwukrotnie.
+# 
 
-Skrypt automatycznie:
+# 
 
--Podniesie kontenery Dockera (Baza + Symulator)
+# 3\. Konfiguracja Frontendu
 
--Otworzy okno z generatorem danych (symulacja ruchu)
+# 
 
--Otworzy okno z serwerem Backend
+# Należy pobrać zależności projektu w katalogu frontend:
 
--Otworzy okno z Frontendem i uruchomi przeglądarkę
+# 
 
-# Metoda Ręczna (Terminal):
+# cd ../frontend
 
-Jeśli wolisz terminal, uruchom komponenty w osobnych oknach:
+# npm install
 
--Infrastruktura: docker-compose up -d
+# 
 
--Generator: python generate_load.py
+# 
 
--Backend: cd backend -> python app.py
+# Uruchomienie
 
--Frontend: cd frontend -> npm start
+# 
 
-Aplikacja dostępna jest pod adresem: http://localhost:3000 (lub http://localhost:3001, jeśli port 3000 jest zajęty)
+# System można uruchomić na dwa sposoby.
 
-# 📂 Struktura Katalogów
+# 
 
-/backend - Kod serwera API (Flask), logika SNMP, generator raportów PDF.
+# Metoda automatyczna (Windows)
 
-/frontend - Kod aplikacji klienckiej (React), style CSS, komponenty wykresów.
+# 
 
-/snmpsim - Konfiguracja i dane symulatora routera (pliki .snmprec).
+# W głównym katalogu projektu znajduje się skrypt start\_monitoring.bat. Jego uruchomienie spowoduje:
 
-docker-compose.yml - Definicja kontenerów infrastruktury.
+# 
 
-generate_load.py - Skrypt Python generujący losowe obciążenie dla symulatora (dla celów demonstracyjnych).
+# Start kontenerów Docker (baza danych, symulator).
 
-start_monitoring.bat - Launcher dla systemu Windows.
+# 
 
-# ❓ Rozwiązywanie problemów
+# Uruchomienie generatora obciążenia.
 
-Jeśli napotkasz błędy podczas instalacji lub uruchamiania, sprawdź poniższe rozwiązania.
+# 
 
-Błędy Instalacji
+# Uruchomienie serwera Backend i aplikacji Frontend w osobnych oknach.
 
-🔴 Błąd "npm ... cannot be loaded because running scripts is disabled on this system"
+# 
 
-Przyczyna: Zabezpieczenia PowerShell w Windows blokują skrypty.
+# Metoda ręczna
 
-Rozwiązanie: Otwórz PowerShell jako Administrator i wpisz:
+# 
 
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+# Należy uruchomić poszczególne komponenty w osobnych terminalach:
 
+# 
 
-🔴 Błąd "pip : The term 'pip' is not recognized"
+# Infrastruktura: docker-compose up -d
 
-Przyczyna: Python nie został dodany do zmiennych środowiskowych (PATH).
+# 
 
-Rozwiązanie: Użyj pełnej komendy Pythona:
+# Generator danych: python generate\_load.py
 
-python -m pip install -r requirements.txt
+# 
 
+# Backend: cd backend \&\& python app.py (Serwer nasłuchuje na porcie 5001)
 
-🔴 Błąd "ModuleNotFoundError: No module named 'asyncore'" (Python 3.12+)
+# 
 
-Przyczyna: Moduł asyncore został usunięty z nowych wersji Pythona, a biblioteka SNMP go wymaga.
+# Frontend: cd frontend \&\& npm start (Aplikacja dostępna pod http://localhost:3000)
 
-Rozwiązanie: Upewnij się, że w pliku backend/requirements.txt znajduje się pyasyncore i uruchom pip install -r requirements.txt. Kod aplikacji automatycznie załaduje łatkę.
+# 
 
-Błędy Uruchamiania
+# Rozwiązywanie problemów
 
-🔴 Błąd w przeglądarce: "Network Error" / "Błąd połączenia z Backendem"
+# 
 
-Przyczyna: Frontend (React) nie widzi Backendu (Flask).
+# Błąd uprawnień PowerShell (running scripts is disabled):
 
-Rozwiązanie:
-Sprawdź, czy okno terminala z python app.py jest otwarte i nie ma błędów.
-Sprawdź, czy Zapora Windows (Firewall) nie blokuje portu 5001.
-Spróbuj wejść bezpośrednio na http://127.0.0.1:5001/snmp – jeśli działa, problem leży w przeglądarce (CORS/AdBlock).
+# Należy zmienić politykę wykonywania skryptów dla bieżącego użytkownika:
 
-🔴 Wykresy są puste lub stoją w miejscu
+# Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-Przyczyna: Symulator nie generuje nowych danych lub baza nie zapisuje.
+# 
 
-Rozwiązanie:
-Upewnij się, że uruchomiłeś skrypt python generate_load.py.
-Sprawdź, czy kontenery Docker działają (docker ps).
+# Błąd ModuleNotFoundError (Python):
 
-🔴 Raport PDF nie pobiera się
+# Upewnij się, że polecenie pip install zostało wykonane wewnątrz katalogu backend. W przypadku problemów z pip, użyj python -m pip install ....
 
-Przyczyna: Błąd generowania pliku po stronie serwera.
+# 
 
-Rozwiązanie: Sprawdź logi w oknie backendu. Upewnij się, że masz
+# Brak danych na wykresach:
+
+# Weryfikacja działania skryptu generate\_load.py oraz kontenerów Docker (docker ps).
+
+# 
+
+# Błąd połączenia (Network Error):
+
+# Sprawdź, czy port 5001 nie jest blokowany przez zaporę systemu Windows.
+
