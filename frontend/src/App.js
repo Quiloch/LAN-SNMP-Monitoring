@@ -102,7 +102,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, []); // API_URL jest stała wiec pusta tablica jest ok
+  }, []); // API_URL jest stałe, więc pusta tablica jest ok
 
   // Uruchomienie interwału
   useEffect(() => {
