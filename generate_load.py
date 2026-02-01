@@ -6,7 +6,7 @@ import subprocess
 DATA_FILE = os.path.join("snmpsim", "data", "router.snmprec")
 
 def generate_data():
-    print(f"Generator startuje...")
+    print(f"Generator startuje")
     
     traffic_in_1 = 1000000
     traffic_out_1 = 500000
@@ -63,9 +63,9 @@ def generate_data():
                 f.write(content)
             # restart zeby dane mogly sie zaktualizowac
             subprocess.run("docker restart snmp-simulator", shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            print(f"⚡ Zaktualizowano: Uptime={uptime_ticks}, Lokalizacja=Serwerownia B")
+            print(f"Zaktualizowano: Uptime={uptime_ticks}, Lokalizacja=Serwerownia B")
         except Exception as e:
-            print(f"⚠️ Błąd: {e}")
+            print(f"Błąd: {e}")
 
         time.sleep(15)
 
@@ -73,4 +73,4 @@ if __name__ == "__main__":
     try:
         generate_data()
     except KeyboardInterrupt:
-        print("\n🛑 Zatrzymano.")
+        print("\n Zatrzymano.")

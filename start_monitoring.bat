@@ -21,7 +21,6 @@ echo.
 
 :: 2. Generator Danych
 echo [2/4] Uruchamianie Generatora...
-:: Uruchamiamy bez wymuszania tytulu zmienna, system sam doda komende do nazwy okna
 start "Generator Danych" cmd /k "python generate_load.py"
 echo [OK] Generator uruchomiony.
 echo.
@@ -57,7 +56,7 @@ goto WAIT_LOOP
 :SHUTDOWN
 echo.
 echo ========================================================
-echo      ZAMYKANIE SYSTEMU...
+echo      ZAMYKANIE SYSTEMU
 echo ========================================================
 
 :: 1. Instrukcja dla użytkownika

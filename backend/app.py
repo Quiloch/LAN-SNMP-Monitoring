@@ -56,7 +56,7 @@ except Exception as e:
 
 def background_monitoring():
     time.sleep(5)
-    logger.info("Uruchamianie monitoringu w tle...")
+    logger.info("Uruchamianie monitoringu w tle")
     
     while True:
         try:

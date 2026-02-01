@@ -19,7 +19,7 @@ class SNMPManager:
         self.config = SNMP_CONFIG
 
     def execute_snmp_query(self, oid):
-        """Wykonywanie pojedynczego zapytania SNMP GET"""
+        """Wykonywanie zapytania SNMP GET"""
         try:
             iterator = getCmd(
                 SnmpEngine(),
@@ -67,7 +67,7 @@ class SNMPManager:
         return "unknown"
 
     def get_devices(self):
-        """Zwraca statyczną konfigurację (zastępuje discovery)"""
+        """Zwraca statyczną konfigurację"""
         # Ukrywamy hasła w odpowiedzi API
         safe_config = {k: v for k, v in self.config.items() if 'password' not in k and 'key' not in k}
         return {

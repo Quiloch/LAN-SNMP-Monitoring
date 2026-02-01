@@ -67,7 +67,7 @@ function App() {
            newAlerts.push({
               id: 2, 
               type: 'warning', 
-              msg: `OSTRZEŻENIE: Interfejs GigabitEthernet0/1 jest DOWN`
+              msg: `OSTRZEŻENIE: Interfejs GigabitEthernet0/1 DOWN`
           });
       }
 
