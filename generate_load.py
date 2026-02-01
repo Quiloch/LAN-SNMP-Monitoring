@@ -17,7 +17,7 @@ def generate_data():
     uptime_ticks = 532231
 
     while True:
-        cpu_load = random.randint(40, 100) 
+        cpu_load = random.randint(20, 100) 
         ram_total = 1024000
         ram_free = int(ram_total * random.uniform(0.1, 0.9))
         

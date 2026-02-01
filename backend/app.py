@@ -28,14 +28,12 @@ import threading
 import logging
 from influxdb import InfluxDBClient
 from io import BytesIO
-
-# Lokalne importy
 from snmp_scan import SNMPManager
 from config import SNMP_CONFIG
 from export import export_to_influxdb
 from report import create_report
 
-# Konfiguracja logowania
+# Logowanie
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SNMP-Monitor")
 
@@ -52,26 +50,24 @@ influx_client = InfluxDBClient(
 
 try:
     influx_client.create_database(SNMP_CONFIG['influx_db'])
-    logger.info("📦 Połączono z bazą danych InfluxDB")
+    logger.info("Połączono z bazą danych InfluxDB")
 except Exception as e:
-    logger.warning(f"⚠️ Ostrzeżenie InfluxDB: {e}")
+    logger.warning(f"Ostrzeżenie InfluxDB: {e}")
 
-# Wątek zbierania danych w tle
 def background_monitoring():
     time.sleep(5)
-    logger.info("🟢 Uruchamianie monitoringu w tle...")
+    logger.info("Uruchamianie monitoringu w tle...")
     
     while True:
         try:
             data = snmp_manager.get_snmp_data()
-            # Prosta walidacja czy nie ma błędów w danych
             error_found = any("Error" in str(val) or "Exception" in str(val) for val in data.values())
             
             if not error_found and data:
                 export_to_influxdb(data)
-                logger.debug(f"💾 Zapisano dane: CPU={data.get('cpuUsage')}%")
+                logger.debug(f"Zapisano dane: CPU={data.get('cpuUsage')}%")
         except Exception as e:
-            logger.error(f"❌ Błąd monitoringu: {e}")
+            logger.error(f"Błąd monitoringu: {e}")
         
         time.sleep(10)
 
@@ -79,7 +75,7 @@ if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
     monitor_thread = threading.Thread(target=background_monitoring, daemon=True)
     monitor_thread.start()
 
-# Pobieranie historii
+
 def get_history_data(hours=1):
     try:
         influx_client.switch_database(SNMP_CONFIG['influx_db'])
@@ -105,7 +101,6 @@ def get_history_data(hours=1):
         logger.error(f"Błąd historii DB: {str(e)}")
         return []
 
-# Endpointy API
 
 @app.route('/')
 def home():

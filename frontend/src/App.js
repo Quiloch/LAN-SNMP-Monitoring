@@ -1,6 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
+  ResponsiveContainer, ReferenceLine 
+} from 'recharts';
 import './App.css';
 
 const API_URL = 'http://127.0.0.1:5001';
@@ -12,14 +15,12 @@ function App() {
   const [error, setError] = useState(null);
   const [alerts, setAlerts] = useState([]);
   
-  // Stan do ukrywania/pokazywania debuggera (Przywrócony)
+  // Ukrywanie/pokazanie debuggera
   const [showDebug, setShowDebug] = useState(false);
   const [debugInfo, setDebugInfo] = useState("Inicjalizacja...");
   
   const intervalRef = useRef(null);
-
-  // Funkcje pomocnicze 
-  
+ 
   const formatBytes = (bytes, decimals = 2) => {
       if (!+bytes) return '0 B';
       const k = 1024;
@@ -47,9 +48,7 @@ function App() {
       document.body.removeChild(link);
   };
 
-  // Główna logika danych 
-
-  // Funkcja sprawdzająca alerty (wyciągnięta, aby była dostępna w useEffect)
+  // Sprawdzenie alertów
   const checkAlerts = (data) => {
       const newAlerts = [];
       const cpu = parseFloat(data.cpuUsage);
@@ -84,7 +83,7 @@ function App() {
       setAlerts(newAlerts);
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const currentRes = await axios.get(`${API_URL}/snmp`);
       
@@ -103,7 +102,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // API_URL jest stała wiec pusta tablica jest ok
 
   // Uruchomienie interwału
   useEffect(() => {
@@ -112,7 +111,7 @@ function App() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, []);
+  }, [fetchData]); // dodatnie fetchData do zależności
 
   // Aktualizacja historii wykresów
   useEffect(() => {
@@ -180,7 +179,7 @@ function App() {
             </div>
         </div>
 
-        {/* Wykres CPU */}
+        {/* Wykres CPU*/}
         <div className="card">
             <h3>📈 Obciążenie CPU</h3>
             <div style={{ width: '100%', height: 300 }}>
@@ -195,7 +194,7 @@ function App() {
                     </LineChart>
                 </ResponsiveContainer>
             </div>
-            {/* Wartość CPU - czerwony jeśli > 80 */}
+            {/* Wartość CPU -> czerwony jeśli > 80 */}
             <div className="stat-value" style={{color: parseFloat(currentData?.cpuUsage) > 80 ? '#c0392b' : '#2c3e50'}}>
                 {currentData?.cpuUsage}%
             </div>
@@ -274,7 +273,7 @@ function App() {
         </div>
       )}
 
-      {/* Przycisk Debuggera (Dół z prawej strony) */}
+      {/* Przycisk Debuggera*/}
       <button className="btn-debug-toggle" onClick={() => setShowDebug(!showDebug)} title="Pokaż/Ukryj konsolę diagnostyczną">
         🛠️
       </button>

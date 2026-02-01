@@ -26,18 +26,17 @@ SNMP_CONFIG = {
 
 # Definicje OID dla urządzeń Cisco
 OIDS = {
-    # Informacje podstawowe
     "sysName": "1.3.6.1.2.1.1.5.0",       # Nazwa hosta
     "sysDescr": "1.3.6.1.2.1.1.1.0",      # Opis
     "sysContact": "1.3.6.1.2.1.1.4.0",    # Kontakt 
     "sysLocation": "1.3.6.1.2.1.1.6.0",   # Lokalizacja 
     "sysUpTime": "1.3.6.1.2.1.1.3.0",     # Czas działania 
     
-    # Informacje o zasobach
+
     "cpuUsage": "1.3.6.1.4.1.9.9.109.1.1.1.1.6",  # Wykorzystanie CPU
     "ramTotal": "1.3.6.1.4.1.9.9.48.1.1.1.6",     # Całkowita pamięć RAM
     "ramFree": "1.3.6.1.4.1.9.9.48.1.1.1.5",      # Wolna pamięć RAM
-    "ramUsage": "1.3.6.1.4.1.9.9.48.1.1.1.5",     # Wykorzystanie RAM (obliczane jako (Total - Free)/Total * 100)
+    "ramUsage": "1.3.6.1.4.1.9.9.48.1.1.1.5",     # Wykorzystanie RAM ((Total - Free)/Total * 100)
     
     # Interfejs 1 (GigabitEthernet0/0)
     "if1_Name": "1.3.6.1.2.1.2.2.1.2.1",

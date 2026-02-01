@@ -231,5 +231,5 @@ def create_report(curr, hist=None):
         pdf.ln(10)
         pdf.cell(0, 10, replace_pl("Brak danych historycznych."), 0, 1, 'C')
 
-# Wystepowal blad kodowania znakow, jesli ktorys znak nie zostanie rozpoznany zostanie zastapiony "?"
+    # Wystepowal blad kodowania znakow, jesli ktorys znak nie zostanie rozpoznany zostanie zastapiony "?"
     return pdf.output(dest='S').encode('latin-1', 'replace')
